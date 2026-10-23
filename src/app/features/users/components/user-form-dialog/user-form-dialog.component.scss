@@ -1,0 +1,14 @@
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  min-width: min(480px, 80vw);
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+
+  mat-form-field {
+    flex: 1;
+  }
+}

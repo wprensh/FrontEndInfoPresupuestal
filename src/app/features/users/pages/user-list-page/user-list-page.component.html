@@ -1,0 +1,22 @@
+<app-page-header title="Gestión de usuarios" [subtitle]="store.activeCount() + ' activos de ' + store.total()">
+  <button mat-flat-button (click)="openCreateDialog()">
+    <mat-icon>person_add</mat-icon>
+    Nuevo usuario
+  </button>
+</app-page-header>
+
+<mat-form-field class="search" appearance="outline">
+  <mat-label>Buscar por nombre o correo</mat-label>
+  <mat-icon matPrefix>search</mat-icon>
+  <input matInput [value]="store.query()" (input)="onSearch($event)" />
+</mat-form-field>
+
+@if (store.error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}
+
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<app-user-table [users]="store.filteredUsers()" (delete)="confirmDelete($event)" />
