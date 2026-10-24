@@ -1,0 +1,42 @@
+<div class="page">
+  <app-page-header title="Torre Residencial Altamira" subtitle="Contrato OB-2026-014 · Control presupuestal por partida">
+    <button mat-stroked-button>
+      <mat-icon>download</mat-icon>
+      Exportar
+    </button>
+  </app-page-header>
+
+  @if (store.error(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+
+  @if (store.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="layout">
+    <section class="main">
+      <div class="toolbar">
+        <app-budget-filter-chips
+          [options]="filterOptions"
+          [counts]="store.statusCounts()"
+          [value]="store.filter()"
+          (valueChange)="store.setFilter($event)"
+        />
+        <span class="summary">
+          {{ store.filteredItems().length }} partidas · {{ store.totals().budget | currency: currency : 'symbol-narrow' : '1.0-0' }}
+        </span>
+      </div>
+      <app-budget-items-table
+        [items]="store.filteredItems()"
+        [totals]="store.totals()"
+        [selectedId]="store.selectedId()"
+        (itemSelected)="store.select($event.id)"
+      />
+    </section>
+
+    @if (store.selectedItem(); as item) {
+      <app-budget-item-detail [item]="item" (history)="onHistory($event)" (adjust)="onAdjust($event)" />
+    }
+  </div>
+</div>

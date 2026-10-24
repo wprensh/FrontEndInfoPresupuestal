@@ -1,0 +1,48 @@
+<aside class="detail" [attr.aria-label]="'Detalle de ' + item().name">
+  <div class="head">
+    <span class="code">{{ item().code }}</span>
+    <span class="status" [attr.data-status]="item().status">{{ statusLabels[item().status] }}</span>
+  </div>
+  <h2>{{ item().name }}</h2>
+
+  <div class="stats">
+    <div class="stat">
+      <span>Presupuesto</span>
+      <strong>{{ item().budget | currency: currency : 'symbol-narrow' : '1.0-0' }}</strong>
+    </div>
+    <div class="stat">
+      <span>Desviación</span>
+      <strong [class.negative]="item().variance > 0" [class.positive]="item().variance <= 0">
+        @if (item().variance > 0) {+}{{ item().variance | currency: currency : 'symbol-narrow' : '1.0-0' }}
+      </strong>
+    </div>
+  </div>
+
+  <h3>Desglose por insumo</h3>
+  <div class="inputs">
+    @for (input of item().inputs; track input.type) {
+      <div class="input">
+        <div class="row">
+          <mat-icon>{{ inputIcons[input.type] }}</mat-icon>
+          <span class="label">{{ inputLabels[input.type] }}</span>
+          <span class="amount">
+            {{ input.executed | currency: currency : 'symbol-narrow' : '1.0-0' }} /
+            {{ input.budget | currency: currency : 'symbol-narrow' : '1.0-0' }}
+          </span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="usage(input)" [class.over]="input.executed > input.budget" />
+      </div>
+    }
+  </div>
+
+  <div class="actions">
+    <button mat-stroked-button (click)="history.emit(item())">
+      <mat-icon>history</mat-icon>
+      Movimientos
+    </button>
+    <button mat-flat-button (click)="adjust.emit(item())">
+      <mat-icon>edit_note</mat-icon>
+      Ajustar
+    </button>
+  </div>
+</aside>

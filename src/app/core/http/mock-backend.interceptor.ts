@@ -2,10 +2,11 @@ import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { delay, of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { BUDGET_ITEMS_MOCK } from './mock-data/budget-items.mock';
 
 /**
- * Backend en memoria para desarrollo. Solo atiende `/users`; el resto de
- * peticiones pasa al servidor real. Se desactiva con `useMockBackend: false`.
+ * Backend en memoria para desarrollo. Atiende `/users` y `/budget/items`; el resto
+ * de peticiones pasa al servidor real. Se desactiva con `useMockBackend: false`.
  */
 const users = [
   { id: '1', firstName: 'Ana', lastName: 'Torres', email: 'ana.torres@infopresupuestal.pe', role: 'admin', active: true, createdAt: '2026-01-15T10:00:00Z' },
@@ -14,12 +15,21 @@ const users = [
 ];
 
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!environment.useMockBackend || !req.url.includes('/users')) {
+  if (!environment.useMockBackend) {
+    return next(req);
+  }
+
+  const respond = (body: unknown, status = 200) => of(new HttpResponse({ status, body })).pipe(delay(300));
+
+  if (req.url.includes('/budget/items') && req.method === 'GET') {
+    return respond(structuredClone(BUDGET_ITEMS_MOCK));
+  }
+
+  if (!req.url.includes('/users')) {
     return next(req);
   }
 
   const id = req.url.split('/users/')[1];
-  const respond = (body: unknown, status = 200) => of(new HttpResponse({ status, body })).pipe(delay(300));
 
   switch (req.method) {
     case 'GET':

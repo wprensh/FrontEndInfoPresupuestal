@@ -4,12 +4,22 @@ html {
   color-scheme: light;
   @include mat.theme((
     color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
+      primary: mat.$cyan-palette,
+      tertiary: mat.$orange-palette,
     ),
     typography: Roboto,
     density: 0,
   ));
+
+  // Colores semánticos de control presupuestal (estado de partida)
+  --ip-status-ok: #2e6b30;
+  --ip-status-ok-container: #ddf0da;
+  --ip-status-warning: #8a5300;
+  --ip-status-warning-container: #ffe6c2;
+  --ip-status-overrun: var(--mat-sys-error);
+  --ip-status-overrun-container: var(--mat-sys-error-container);
+  --ip-brand-accent: #f2b84b;
+  --ip-font-mono: 'Roboto Mono', monospace;
 }
 
 html,

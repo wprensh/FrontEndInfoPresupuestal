@@ -1,0 +1,29 @@
+:host { display: block; }
+.detail {
+  height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 20px;
+  border: 1px solid var(--mat-sys-outline-variant); border-radius: 12px; background: var(--mat-sys-surface-container-lowest);
+}
+.head { display: flex; align-items: center; justify-content: space-between; }
+.code { font: 400 12px var(--ip-font-mono); color: var(--mat-sys-on-surface-variant); }
+.status { font: 500 12px Roboto; padding: 4px 10px; border-radius: 8px; }
+.status[data-status='ok'] { color: var(--ip-status-ok); background: var(--ip-status-ok-container); }
+.status[data-status='warning'] { color: var(--ip-status-warning); background: var(--ip-status-warning-container); }
+.status[data-status='overrun'] { color: var(--mat-sys-on-error-container); background: var(--ip-status-overrun-container); }
+h2 { margin: 0; font: 400 24px/1.25 Roboto; text-wrap: pretty; }
+h3 { margin: 4px 0 0; font: 500 14px Roboto; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: var(--mat-sys-surface-container-low); }
+.stat span { font: 400 12px Roboto; color: var(--mat-sys-on-surface-variant); }
+.stat strong { font: 500 16px Roboto; font-variant-numeric: tabular-nums; }
+.negative { color: var(--ip-status-overrun); }
+.positive { color: var(--ip-status-ok); }
+.inputs { display: flex; flex-direction: column; gap: 14px; }
+.input { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; align-items: center; gap: 8px; font: 400 13px Roboto; }
+.row mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--mat-sys-primary); }
+.label { flex: 1; }
+.amount { color: var(--mat-sys-on-surface-variant); font-variant-numeric: tabular-nums; }
+mat-progress-bar { border-radius: 3px; --mat-progress-bar-active-indicator-height: 6px; --mat-progress-bar-track-height: 6px; }
+mat-progress-bar.over { --mat-progress-bar-active-indicator-color: var(--ip-status-overrun); }
+.actions { margin-top: auto; display: flex; gap: 8px; }
+.actions button { flex: 1; }
