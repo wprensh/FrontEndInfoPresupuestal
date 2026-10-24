@@ -1,17 +1,29 @@
 import { Routes } from '@angular/router';
 
+import { authGuard, canView, guestGuard } from './core/auth/auth.guards';
 import { ShellComponent } from './core/layout/shell/shell.component';
 
 /** Cada feature se carga en diferido a través de su archivo `*.routes.ts`. */
 export const routes: Routes = [
+  { path: 'login', canActivate: [guestGuard], loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES) },
   {
     path: '',
     component: ShellComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'presupuesto' },
       { path: 'presupuesto', loadChildren: () => import('./features/budget/budget.routes').then((m) => m.BUDGET_ROUTES) },
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES) },
-      { path: 'users', loadChildren: () => import('./features/users/users.routes').then((m) => m.USERS_ROUTES) },
+      {
+        path: 'mantenimiento',
+        canMatch: [canView('insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo')],
+        loadChildren: () => import('./features/mantenimiento/mantenimiento.routes').then((m) => m.MANTENIMIENTO_ROUTES),
+      },
+      {
+        path: 'administracion',
+        canMatch: [canView('usuarios', 'roles')],
+        loadChildren: () => import('./features/administracion/administracion.routes').then((m) => m.ADMINISTRACION_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

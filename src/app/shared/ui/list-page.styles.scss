@@ -1,0 +1,11 @@
+// Estilos comunes de las páginas de listado (tabla + búsqueda + paginador).
+.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar app-search-box { flex: 1; min-width: 220px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--mat-sys-outline-variant); border-radius: 12px; }
+table { width: 100%; }
+.actions-cell { text-align: right; white-space: nowrap; width: 1%; }
+.error { color: var(--mat-sys-error); }
+.empty { padding: 32px; text-align: center; opacity: 0.6; }
+.muted { opacity: 0.6; font-size: 12px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.code { font-family: var(--ip-font-mono); font-size: 13px; }
