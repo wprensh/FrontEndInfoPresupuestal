@@ -19,6 +19,10 @@ export class BudgetItemsTableComponent {
   readonly itemSelected = output<BudgetItemView>();
 
   protected readonly currency = BUDGET_CURRENCY;
-  protected readonly statusLabels = STATUS_LABELS;
   protected readonly columns = ['code', 'name', 'budget', 'executed', 'remaining', 'executedRatio', 'physicalProgress'];
+
+  /** Las filas de mat-table llegan sin tipo (`let item`), así que el índice se tipa aquí. */
+  protected statusLabel(item: BudgetItemView): string {
+    return STATUS_LABELS[item.status];
+  }
 }

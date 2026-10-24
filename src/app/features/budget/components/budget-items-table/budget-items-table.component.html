@@ -10,7 +10,7 @@
       <th mat-header-cell *matHeaderCellDef>Partida</th>
       <td mat-cell *matCellDef="let item">
         <span class="name">
-          <span class="dot" [attr.data-status]="item.status" [matTooltip]="statusLabels[item.status]"></span>
+          <span class="dot" [attr.data-status]="item.status" [matTooltip]="statusLabel(item)"></span>
           {{ item.name }}
         </span>
       </td>
