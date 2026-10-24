@@ -1,5 +1,8 @@
 import { HttpRequest } from '@angular/common/http';
 
+import { Body, MockResult, noContent, norm, now, ok, page, problem } from './mock-http';
+import { handlePresupuestosMock } from './presupuestos.mock';
+
 /**
  * Backend simulado de autenticación, administración y mantenimiento (solo demo y desarrollo).
  * Imita las reglas de la API real: datos aislados por empresa, catálogos globales,
@@ -85,10 +88,7 @@ interface PrecioRow {
   fuente: string | null;
 }
 
-export interface MockResult {
-  status: number;
-  body: unknown;
-}
+export type { MockResult } from './mock-http';
 
 const MODULOS: ModuloDef[] = [
   { codigo: 'empresas', nombre: 'Empresas', grupo: 'Administración', alcance: 'Plataforma' },
@@ -100,11 +100,12 @@ const MODULOS: ModuloDef[] = [
   { codigo: 'insumos', nombre: 'Insumos', grupo: 'Mantenimiento', alcance: 'Tenant' },
   { codigo: 'precios-insumo', nombre: 'Precios de insumos', grupo: 'Mantenimiento', alcance: 'Tenant' },
   { codigo: 'productos', nombre: 'Productos', grupo: 'Catálogo', alcance: 'Tenant' },
+  { codigo: 'apu', nombre: 'Análisis de precios unitarios', grupo: 'Presupuestos', alcance: 'Tenant' },
+  { codigo: 'presupuestos', nombre: 'Presupuestos de obra', grupo: 'Presupuestos', alcance: 'Tenant' },
 ];
 const ACCIONES: Accion[] = ['ver', 'insertar', 'editar', 'eliminar'];
 const asignables = (m: ModuloDef): Accion[] => (m.alcance === 'Tenant' ? ACCIONES : m.alcance === 'Global' ? ['ver'] : []);
 
-const now = () => new Date().toISOString();
 // Los datos sembrados usan ids fijos: así un token guardado sigue sirviendo después de recargar la página.
 let seeding = true;
 let seedSeq = 0;
@@ -238,19 +239,6 @@ seeding = false;
 
 // ---------------- Utilidades ----------------
 
-const problem = (status: number, title: string, detail: string): MockResult => ({ status, body: { status, title, detail } });
-const ok = (body: unknown, status = 200): MockResult => ({ status, body });
-const noContent = (): MockResult => ({ status: 204, body: null });
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-function page<T>(req: HttpRequest<unknown>, rows: T[], text: (row: T) => string): MockResult {
-  const p = Math.max(1, Number(req.params.get('page') ?? 1));
-  const size = Math.min(100, Math.max(1, Number(req.params.get('pageSize') ?? 20)));
-  const search = norm(req.params.get('search') ?? '');
-  const filtered = search ? rows.filter((r) => norm(text(r)).includes(search)) : rows;
-  return ok({ items: filtered.slice((p - 1) * size, p * size), page: p, pageSize: size, total: filtered.length });
-}
-
 /** El token del mock es `mock.<base64 {u, t}>`; no se valida firma, solo sirve para saber quién llama. */
 const makeToken = (u: UsuarioRow) => `mock.${btoa(JSON.stringify({ u: u.id, t: u.tenantId }))}`;
 
@@ -320,7 +308,6 @@ const precioDto = (p: PrecioRow) => {
 };
 
 const METHOD_ACCION: Record<string, Accion> = { GET: 'ver', POST: 'insertar', PUT: 'editar', DELETE: 'eliminar' };
-type Body = Record<string, unknown>;
 
 // ---------------- Rutas ----------------
 
@@ -339,7 +326,9 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
     return ok({ token: makeToken(user), expiraEn: new Date(Date.now() + 8 * 3600_000).toISOString(), usuario: sesion(user), permisos: permisosDe(user) });
   }
 
-  if (!path.startsWith('/auth') && !path.startsWith('/admin') && !path.startsWith('/mantenimiento')) return null;
+  const [, seccion, recurso, id, sub, subId] = path.split('/');
+  const presupuestal = seccion === 'apus' || seccion === 'presupuestos';
+  if (!presupuestal && seccion !== 'auth' && seccion !== 'admin' && seccion !== 'mantenimiento') return null;
 
   const c = caller(req);
   if (!c) return problem(401, 'Unauthorized', 'Inicia sesión de nuevo.');
@@ -347,8 +336,13 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
 
   if (path === '/auth/me') return ok({ usuario: sesion(c.user), permisos: permisosDe(c.user) });
 
-  const [, seccion, recurso, id, sub, subId] = path.split('/');
   const accion = METHOD_ACCION[req.method] ?? 'ver';
+  if (presupuestal) {
+    // /apus/:id/duplicar crea un registro; /presupuestos/:id/estado y /recalcular lo modifican.
+    const especial: Accion | null = id && req.method !== 'GET' ? (id === 'duplicar' ? 'insertar' : 'editar') : null;
+    if (!can(c, seccion === 'apus' ? 'apu' : 'presupuestos', especial ?? accion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    return handlePresupuestosMock(req, c.tenant, seccion as 'apus' | 'presupuestos', recurso, id, body, (u) => unidades.find((x) => x.id === u));
+  }
   const modulo = recurso === 'modulos' ? 'roles' : sub === 'precios' ? 'precios-insumo' : recurso === 'empresas' ? 'empresas' : recurso;
   if (!can(c, modulo, recurso === 'modulos' ? 'ver' : accion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
 

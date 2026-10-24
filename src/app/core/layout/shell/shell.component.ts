@@ -104,7 +104,8 @@ export class ShellComponent {
 
   protected readonly links = computed<NavLink[]>(() => [
     { path: '/presupuesto', label: 'Partidas', icon: 'table_view' },
-    { path: '/apu', label: 'APU', icon: 'calculate' },
+    ...(this.auth.can('presupuestos') ? [{ path: '/presupuestos', label: 'Presupuestos', icon: 'request_quote' }] : []),
+    ...(this.auth.can('apu') ? [{ path: '/apu', label: 'APU', icon: 'calculate' }] : []),
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     ...(this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
       ? [{ path: '/mantenimiento', label: 'Mantenimiento', icon: 'inventory_2' }]

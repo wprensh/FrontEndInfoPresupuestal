@@ -2,7 +2,7 @@ import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { APU_MATERIAL } from '../../material/apu-material';
-import { APU_CURRENCY, ApuTotales, Unidad } from '../../models/apu.model';
+import { APU_CURRENCY, ApuTotales } from '../../models/apu.model';
 
 /** Resumen de costos del APU, equivalente al bloque "TOTAL COSTO DIRECTO" del Excel. */
 @Component({
@@ -39,7 +39,7 @@ import { APU_CURRENCY, ApuTotales, Unidad } from '../../models/apu.model';
 })
 export class ApuResumenComponent {
   readonly totales = input.required<ApuTotales>();
-  readonly unidad = input<Unidad | null>(null);
+  readonly unidad = input<string | null>(null);
 
   protected readonly moneda = APU_CURRENCY;
 }
