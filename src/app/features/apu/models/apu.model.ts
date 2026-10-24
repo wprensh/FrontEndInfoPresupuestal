@@ -3,50 +3,46 @@
  * formato PRESUPUES-TEN: un encabezado y tres secciones de insumos.
  */
 
-/** Unidades de la validación de datos del Excel (columna UNIDAD). */
-export const UNIDADES = ['UN', 'M3', 'M2', 'ML', 'KG', 'TN', 'GLB', 'GLOBAL', 'JORNAL', 'MES', 'DIA', 'HR', 'CM3', 'CM2', 'CM', 'GAL'] as const;
-export type Unidad = (typeof UNIDADES)[number];
-
 /** Factor de prestaciones sociales que trae el formato (columna "% PREST.SOC."). */
 export const FACTOR_PRESTACIONES = 1.7;
 
 export const APU_CURRENCY = 'COP';
 
-/** Insumo de un catálogo, con el precio que se propone al elegirlo. */
-export interface MaterialCatalogo {
-  readonly id: number;
-  readonly descripcion: string;
-  readonly unidad: Unidad;
-  readonly precio: number;
+/** Tipos de insumo del catálogo global (`presupuesto.tipo_insumo`). */
+export const TIPO_MATERIAL = 1;
+export const TIPO_EQUIPO = 2;
+export const TIPO_MANO_OBRA = 3;
+
+export interface UnidadMedida {
+  id: number;
+  codigo: string;
+  nombre: string;
 }
 
-export interface ManoObraCatalogo {
-  readonly id: number;
-  readonly descripcion: string;
-  /** Valor del jornal sin prestaciones. */
-  readonly jornal: number;
+/** Insumo del catálogo de mantenimiento, con su precio vigente. */
+export interface InsumoCatalogo {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  unidadMedidaId: number;
+  unidad: string;
+  precio: { valorUnitario: number; moneda: string; fechaVigencia: string } | null;
 }
 
-export type EquipoCatalogo = MaterialCatalogo;
-
-export interface ApuCatalogos {
-  readonly materiales: readonly MaterialCatalogo[];
-  readonly manoObra: readonly ManoObraCatalogo[];
-  readonly equipos: readonly EquipoCatalogo[];
-}
+// ---------- Valores del formulario (desperdicio en %, como se escribe) ----------
 
 export interface MaterialLinea {
-  insumoId: number | null;
+  insumoId: string | null;
   descripcion: string;
-  unidad: Unidad | null;
+  unidadMedidaId: number | null;
   cantidad: number;
-  /** Porcentaje 0–100 (el Excel lo guarda como fracción). */
+  /** Porcentaje 0–100 (la API y el Excel lo guardan como fracción). */
   desperdicio: number;
   precioUnitario: number;
 }
 
 export interface ManoObraLinea {
-  insumoId: number | null;
+  insumoId: string | null;
   descripcion: string;
   jornal: number;
   prestaciones: number;
@@ -55,22 +51,23 @@ export interface ManoObraLinea {
 }
 
 export interface EquipoLinea {
-  insumoId: number | null;
+  insumoId: string | null;
   descripcion: string;
-  unidad: Unidad | null;
+  unidadMedidaId: number | null;
   incidencia: number;
   precioUnitario: number;
 }
 
 export interface ApuEncabezado {
-  item: string;
   descripcion: string;
-  unidad: Unidad | null;
+  unidadMedidaId: number | null;
   fecha: Date | null;
+  observaciones: string;
+  activo: boolean;
 }
 
 /** Valor completo del formulario. */
-export interface Apu {
+export interface ApuFormValue {
   encabezado: ApuEncabezado;
   materiales: MaterialLinea[];
   manoObra: ManoObraLinea[];
@@ -83,4 +80,69 @@ export interface ApuTotales {
   equipo: number;
   /** Total costo directo por unidad de la actividad. */
   costoDirecto: number;
+}
+
+// ---------- Contrato de la API (/api/apus) ----------
+
+export interface ApuCostos {
+  materiales: number;
+  equipo: number;
+  manoObra: number;
+  costoDirecto: number;
+}
+
+export interface ApuLinea {
+  id: number;
+  orden: number;
+  insumoId: string | null;
+  descripcion: string;
+  unidadMedidaId: number | null;
+  unidad: string | null;
+  cantidad: number;
+  precioUnitario: number;
+  /** Fracción 0–1. */
+  desperdicio: number;
+  factorPrestacional: number;
+  rendimiento: number;
+  valorParcial: number;
+}
+
+export interface Apu {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  unidadMedidaId: number;
+  unidad: string;
+  fecha: string;
+  observaciones: string | null;
+  activo: boolean;
+  costos: ApuCostos;
+  materiales: ApuLinea[];
+  equipo: ApuLinea[];
+  manoObra: ApuLinea[];
+  usosEnPresupuestos: number;
+  actualizadoEn: string;
+}
+
+export interface ApuResumen {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  unidadMedidaId: number;
+  unidad: string;
+  fecha: string;
+  activo: boolean;
+  costos: ApuCostos;
+  actualizadoEn: string;
+}
+
+export interface ApuDto {
+  descripcion: string;
+  unidadMedidaId: number;
+  fecha: string | null;
+  observaciones: string | null;
+  activo: boolean;
+  materiales: { insumoId: string | null; descripcion: string; unidadMedidaId: number; cantidad: number; desperdicio: number; precioUnitario: number }[];
+  equipo: { insumoId: string | null; descripcion: string; unidadMedidaId: number; incidencia: number; precioUnitario: number }[];
+  manoObra: { insumoId: string | null; descripcion: string; jornal: number; factorPrestacional: number; rendimiento: number }[];
 }

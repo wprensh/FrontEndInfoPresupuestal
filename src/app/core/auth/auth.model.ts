@@ -13,7 +13,9 @@ export type Modulo =
   | 'tipos-insumo'
   | 'insumos'
   | 'precios-insumo'
-  | 'productos';
+  | 'productos'
+  | 'apu'
+  | 'presupuestos';
 
 export interface SesionUsuario {
   id: string;

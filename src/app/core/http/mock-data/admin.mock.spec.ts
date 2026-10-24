@@ -46,4 +46,34 @@ describe('admin mock backend', () => {
     expect((created.body as { codigo: string; descripcion: string }).codigo).toMatch(/^MO-\d{4}$/);
     expect((created.body as { descripcion: string }).descripcion).toBe('Soldador certificado');
   });
+
+  it('builds budgets from APUs with consecutive codes and AIU totals', () => {
+    const admin = token(login('demo', 'admin@demo.local', 'Admin123*'));
+    const apu = (call('GET', '/apus', null, admin).body as { items: { id: string; costos: { costoDirecto: number } }[] }).items[0];
+
+    const created = call('POST', '/presupuestos', {
+      nombreObra: 'Prueba', administracionPct: 0.1, imprevistosPct: 0.02, utilidadPct: 0.04, ivaUtilidadPct: 0.16,
+      capitulos: [{ nombre: 'Obra', items: [{ apuId: apu.id, cantidad: 2 }, { apuId: null, descripcion: 'Aseo', unidadMedidaId: 1, cantidad: 1, valorUnitario: 1000 }] }],
+    }, admin);
+    const body = created.body as { id: string; capitulos: { items: { codigo: string; valorUnitario: number }[] }[]; totales: { costoDirecto: number } };
+
+    expect(created.status).toBe(201);
+    expect(body.capitulos[0].items.map((i) => i.codigo)).toEqual(['1.1', '1.2']);
+    expect(body.capitulos[0].items[0].valorUnitario).toBe(apu.costos.costoDirecto);
+    expect(call('DELETE', `/apus/${apu.id}`, null, admin).status).toBe(409);
+
+    expect(call('PUT', `/presupuestos/${body.id}/estado`, { estado: 'APROBADO' }, admin).status).toBe(200);
+    expect(call('PUT', `/presupuestos/${body.id}`, { nombreObra: 'Otra', capitulos: [] }, admin).status).toBe(409);
+    expect(call('DELETE', `/presupuestos/${body.id}`, null, admin).status).toBe(409);
+    expect(call('POST', `/presupuestos/${body.id}/duplicar`, {}, admin).status).toBe(201);
+  });
+
+  it('lets the read-only role see budgets but not change them', () => {
+    const consulta = token(login('demo', 'consulta@demo.local', 'Consulta123'));
+    const pre = (call('GET', '/presupuestos', null, consulta).body as { items: { id: string }[] }).items[0];
+
+    expect(call('GET', `/presupuestos/${pre.id}`, null, consulta).status).toBe(200);
+    expect(call('POST', `/presupuestos/${pre.id}/recalcular`, {}, consulta).status).toBe(403);
+    expect(call('POST', `/presupuestos/${pre.id}/duplicar`, {}, consulta).status).toBe(403);
+  });
 });

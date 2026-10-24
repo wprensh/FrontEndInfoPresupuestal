@@ -1,36 +1,35 @@
 import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormArray, ReactiveFormsModule } from '@angular/forms';
-import { MatSelectChange } from '@angular/material/select';
 
 import { APU_MATERIAL } from '../../material/apu-material';
 import { totalJornal, totalManoObra } from '../../models/apu.calc';
 import { ManoObraForm } from '../../models/apu.form';
-import { APU_CURRENCY, ManoObraCatalogo } from '../../models/apu.model';
+import { APU_CURRENCY, InsumoCatalogo, TIPO_MANO_OBRA } from '../../models/apu.model';
+import { InsumoAutocompleteComponent } from '../insumo-autocomplete/insumo-autocomplete.component';
 
 /** Sección MANO DE OBRA: jornal × prestaciones, dividido entre el rendimiento diario. */
 @Component({
   selector: 'app-apu-mano-obra',
-  imports: [CurrencyPipe, ReactiveFormsModule, ...APU_MATERIAL],
+  imports: [CurrencyPipe, ReactiveFormsModule, InsumoAutocompleteComponent, ...APU_MATERIAL],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="head">
       <h3>Mano de obra</h3>
-      <button mat-stroked-button type="button" (click)="agregar.emit()"><mat-icon>add</mat-icon>Agregar mano de obra</button>
+      @if (!soloLectura()) {
+        <button mat-stroked-button type="button" (click)="agregar.emit()"><mat-icon>add</mat-icon>Agregar mano de obra</button>
+      }
     </div>
     @for (row of lineas().controls; track row; let i = $index) {
       <div class="row" [formGroup]="row">
-        <mat-form-field appearance="outline" class="wide">
-          <mat-label>Descripción de la mano de obra</mat-label>
-          <mat-select formControlName="insumoId" (selectionChange)="elegir(row, $event)">
-            @for (m of catalogo(); track m.id) {
-              <mat-option [value]="m.id">{{ m.descripcion }}</mat-option>
-            }
-          </mat-select>
-          @if (row.controls.insumoId.hasError('required')) {
-            <mat-error>Elige una cuadrilla u oficio</mat-error>
-          }
-        </mat-form-field>
+        <app-insumo-autocomplete
+          class="wide"
+          label="Descripción de la mano de obra"
+          [tipoInsumoId]="tipo"
+          [descripcion]="row.controls.descripcion"
+          [insumoId]="row.controls.insumoId"
+          (elegido)="elegir(row, $event)"
+        />
         <mat-form-field appearance="outline">
           <mat-label>Valor jornal</mat-label>
           <span matTextPrefix>$&nbsp;</span>
@@ -62,9 +61,11 @@ import { APU_CURRENCY, ManoObraCatalogo } from '../../models/apu.model';
           <small>Total</small>
           <strong>{{ total(row) | currency: moneda : 'symbol-narrow' : '1.0-2' }}</strong>
         </div>
-        <button mat-icon-button type="button" class="remove" (click)="quitar.emit(i)" matTooltip="Quitar mano de obra" aria-label="Quitar mano de obra">
-          <mat-icon>delete</mat-icon>
-        </button>
+        @if (!soloLectura()) {
+          <button mat-icon-button type="button" class="remove" (click)="quitar.emit(i)" matTooltip="Quitar mano de obra" aria-label="Quitar mano de obra">
+            <mat-icon>delete</mat-icon>
+          </button>
+        }
       </div>
     } @empty {
       <p class="empty">Sin mano de obra.</p>
@@ -79,11 +80,12 @@ import { APU_CURRENCY, ManoObraCatalogo } from '../../models/apu.model';
 })
 export class ApuManoObraComponent {
   readonly lineas = input.required<FormArray<ManoObraForm>>();
-  readonly catalogo = input.required<readonly ManoObraCatalogo[]>();
   readonly subtotal = input.required<number>();
+  readonly soloLectura = input(false);
   readonly agregar = output<void>();
   readonly quitar = output<number>();
 
+  protected readonly tipo = TIPO_MANO_OBRA;
   protected readonly moneda = APU_CURRENCY;
 
   protected jornalTotal(row: ManoObraForm): number {
@@ -94,9 +96,8 @@ export class ApuManoObraComponent {
     return totalManoObra(row.getRawValue());
   }
 
-  /** Al elegir del catálogo se propone el valor del jornal. */
-  protected elegir(row: ManoObraForm, e: MatSelectChange): void {
-    const m = this.catalogo().find((x) => x.id === e.value);
-    if (m) row.patchValue({ descripcion: m.descripcion, jornal: m.jornal });
+  /** Al elegir del catálogo se propone su valor vigente como jornal. */
+  protected elegir(row: ManoObraForm, insumo: InsumoCatalogo): void {
+    if (insumo.precio) row.patchValue({ jornal: insumo.precio.valorUnitario });
   }
 }
