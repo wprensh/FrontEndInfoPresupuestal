@@ -13,6 +13,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'presupuesto' },
       { path: 'presupuesto', loadChildren: () => import('./features/budget/budget.routes').then((m) => m.BUDGET_ROUTES) },
+      { path: 'apu', loadChildren: () => import('./features/apu/apu.routes').then((m) => m.APU_ROUTES) },
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES) },
       {
         path: 'mantenimiento',

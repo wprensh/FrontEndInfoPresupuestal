@@ -19,7 +19,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     </header>
   `,
   styles: `
-    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
     h1 { margin: 0; font-size: 1.75rem; font-weight: 500; }
     p { margin: 4px 0 0; opacity: 0.7; }
     .actions { display: flex; gap: 8px; }
