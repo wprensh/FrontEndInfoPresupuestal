@@ -8,7 +8,8 @@ export const routes: Routes = [
     path: '',
     component: ShellComponent,
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: '', pathMatch: 'full', redirectTo: 'presupuesto' },
+      { path: 'presupuesto', loadChildren: () => import('./features/budget/budget.routes').then((m) => m.BUDGET_ROUTES) },
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES) },
       { path: 'users', loadChildren: () => import('./features/users/users.routes').then((m) => m.USERS_ROUTES) },
     ],

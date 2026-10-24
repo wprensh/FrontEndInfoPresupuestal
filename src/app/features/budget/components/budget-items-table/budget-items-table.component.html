@@ -1,0 +1,67 @@
+<div class="wrap">
+  <table mat-table [dataSource]="items()" aria-label="Partidas del presupuesto">
+    <ng-container matColumnDef="code">
+      <th mat-header-cell *matHeaderCellDef>Clave</th>
+      <td mat-cell *matCellDef="let item" class="mono muted">{{ item.code }}</td>
+      <td mat-footer-cell *matFooterCellDef></td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Partida</th>
+      <td mat-cell *matCellDef="let item">
+        <span class="name">
+          <span class="dot" [attr.data-status]="item.status" [matTooltip]="statusLabel(item)"></span>
+          {{ item.name }}
+        </span>
+      </td>
+      <td mat-footer-cell *matFooterCellDef>Total</td>
+    </ng-container>
+
+    <ng-container matColumnDef="budget">
+      <th mat-header-cell *matHeaderCellDef class="num">Presupuesto</th>
+      <td mat-cell *matCellDef="let item" class="num">{{ item.budget | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>
+      <td mat-footer-cell *matFooterCellDef class="num">{{ totals().budget | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="executed">
+      <th mat-header-cell *matHeaderCellDef class="num">Ejercido</th>
+      <td mat-cell *matCellDef="let item" class="num">{{ item.executed | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>
+      <td mat-footer-cell *matFooterCellDef class="num">{{ totals().executed | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="remaining">
+      <th mat-header-cell *matHeaderCellDef class="num">Por ejercer</th>
+      <td mat-cell *matCellDef="let item" class="num" [class.negative]="item.remaining < 0">
+        {{ item.remaining | currency: currency : 'symbol-narrow' : '1.0-0' }}
+      </td>
+      <td mat-footer-cell *matFooterCellDef class="num">{{ totals().remaining | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="executedRatio">
+      <th mat-header-cell *matHeaderCellDef class="num">% Ejer.</th>
+      <td mat-cell *matCellDef="let item" class="num mono" [attr.data-status]="item.status">{{ item.executedRatio | percent: '1.0-0' }}</td>
+      <td mat-footer-cell *matFooterCellDef class="num mono">{{ totals().executedRatio | percent: '1.0-0' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="physicalProgress">
+      <th mat-header-cell *matHeaderCellDef class="num">% Físico</th>
+      <td mat-cell *matCellDef="let item" class="num mono">{{ item.physicalProgress }}%</td>
+      <td mat-footer-cell *matFooterCellDef></td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: columns"
+      tabindex="0"
+      [class.selected]="row.id === selectedId()"
+      [attr.aria-selected]="row.id === selectedId()"
+      (click)="itemSelected.emit(row)"
+      (keydown.enter)="itemSelected.emit(row)"
+    ></tr>
+    <tr mat-footer-row *matFooterRowDef="columns; sticky: true"></tr>
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell empty" [attr.colspan]="columns.length">No hay partidas para este filtro.</td>
+    </tr>
+  </table>
+</div>
