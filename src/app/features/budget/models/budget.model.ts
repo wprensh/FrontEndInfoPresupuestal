@@ -39,7 +39,7 @@ export interface BudgetTotals {
   executedRatio: number;
 }
 
-export const BUDGET_CURRENCY = 'PEN';
+export const BUDGET_CURRENCY = 'COP';
 
 export const STATUS_LABELS: Record<BudgetStatus, string> = {
   ok: 'En rango',
