@@ -118,6 +118,14 @@ const permisosCompletos = (): PermisoRow[] =>
   });
 const permisosLectura = (): PermisoRow[] =>
   MODULOS.filter((m) => m.alcance !== 'Plataforma').map((m) => ({ modulo: m.codigo, ver: true, insertar: false, editar: false, eliminar: false }));
+// Igual que Rol.PermisosProveedor() en la API: mantiene insumos y precios sin eliminar.
+const permisosProveedor = (): PermisoRow[] => [
+  { modulo: 'insumos', ver: true, insertar: true, editar: true, eliminar: false },
+  { modulo: 'precios-insumo', ver: true, insertar: true, editar: true, eliminar: false },
+  { modulo: 'clasificaciones', ver: true, insertar: true, editar: false, eliminar: false },
+  { modulo: 'unidades-medida', ver: true, insertar: false, editar: false, eliminar: false },
+  { modulo: 'tipos-insumo', ver: true, insertar: false, editar: false, eliminar: false },
+];
 
 // ---------------- Datos iniciales ----------------
 
@@ -130,6 +138,9 @@ function provision(tenantId: string, razonSocial: string, admin: { nombre: strin
   const administrador: RolRow = { id: uuid(), tenantId, nombre: 'Administrador', descripcion: 'Acceso completo a la empresa.', esSistema: true, permisos: permisosCompletos() };
   const consulta: RolRow = { id: uuid(), tenantId, nombre: 'Consulta', descripcion: 'Solo lectura.', esSistema: true, permisos: permisosLectura() };
   roles.push(administrador, consulta);
+  if (tenantId !== 'sistema') {
+    roles.push({ id: uuid(), tenantId, nombre: 'Proveedor', descripcion: 'Mantiene insumos y precios del catálogo.', esSistema: true, permisos: permisosProveedor() });
+  }
   usuarios.push({
     id: uuid(),
     tenantId,
@@ -154,6 +165,19 @@ usuarios.push({
   nombre: 'Usuario de consulta',
   rolId: roles.find((r) => r.tenantId === 'demo' && r.nombre === 'Consulta')!.id,
   password: 'Consulta123',
+  activo: true,
+  esSuperAdmin: false,
+  ultimoAcceso: null,
+  creadoEn: now(),
+});
+
+usuarios.push({
+  id: uuid(),
+  tenantId: 'demo',
+  email: 'proveedor@demo.local',
+  nombre: 'Proveedor de ejemplo',
+  rolId: roles.find((r) => r.tenantId === 'demo' && r.nombre === 'Proveedor')!.id,
+  password: 'Proveedor123',
   activo: true,
   esSuperAdmin: false,
   ultimoAcceso: null,

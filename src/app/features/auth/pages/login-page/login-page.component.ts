@@ -49,8 +49,9 @@ import { BrandLogoComponent } from '../../../../shared/ui/brand-logo/brand-logo.
         <button mat-flat-button type="submit" [disabled]="loading()">Entrar</button>
         @if (demo) {
           <p class="hint">
-            Demo: empresa <b>demo</b>, <b>admin&#64;demo.local</b> / <b>Admin123*</b> (administrador) o
-            <b>consulta&#64;demo.local</b> / <b>Consulta123</b> (solo lectura). Superadministrador: empresa <b>sistema</b>,
+            Demo: empresa <b>demo</b>, <b>admin&#64;demo.local</b> / <b>Admin123*</b> (administrador),
+            <b>consulta&#64;demo.local</b> / <b>Consulta123</b> (solo lectura) o
+            <b>proveedor&#64;demo.local</b> / <b>Proveedor123</b> (proveedor). Superadministrador: empresa <b>sistema</b>,
             <b>superadmin&#64;infopresupuestal.local</b> / <b>Admin123*</b>.
           </p>
         }
