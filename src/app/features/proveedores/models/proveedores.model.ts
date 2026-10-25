@@ -79,3 +79,69 @@ export interface CreateProveedorDto {
 export const IVA_GENERAL = 0.19;
 
 export const ciudadLabel = (ciudad: string | null): string => ciudad ?? 'Nacional';
+
+// ----- Consulta de catálogos e importación a insumos (constructoras) -----
+
+/** Producto de cualquier proveedor, con el precio vigente de cada ciudad. */
+export interface ProductoCatalogo {
+  id: string;
+  proveedor: string;
+  razonSocial: string;
+  codigo: string;
+  descripcion: string;
+  tipoInsumoId: number;
+  tipo: string;
+  unidadMedidaId: number;
+  unidad: string;
+  marca: string | null;
+  categoria: string | null;
+  precios: PrecioProveedor[];
+}
+
+export interface CatalogoFiltro {
+  proveedor: string | null;
+  tipoInsumoId: number | null;
+  ciudad: string | null;
+}
+
+/** Una fila por precio: es lo que se selecciona para importar. */
+export interface FilaCatalogo {
+  producto: ProductoCatalogo;
+  precio: PrecioProveedor;
+}
+
+export type AccionImportacion = 'CREAR' | 'ACTUALIZAR' | 'SIN_CAMBIO' | 'REPETIDO';
+
+export interface PropuestaImportacion {
+  precioId: number;
+  productoId: string;
+  proveedor: string;
+  razonSocial: string;
+  codigoProveedor: string;
+  descripcion: string;
+  tipoInsumoId: number;
+  tipo: string;
+  unidadMedidaId: number;
+  unidad: string;
+  ciudad: string | null;
+  valorSinIva: number;
+  fechaProveedor: string;
+  accion: AccionImportacion;
+  insumoId: string | null;
+  insumoCodigo: string | null;
+  precioActual: number | null;
+  clasificacionId: number | null;
+  clasificacion: string | null;
+}
+
+export interface ImportarItem {
+  precioId: number;
+  clasificacionId: number | null;
+}
+
+export interface ResultadoImportacion {
+  creados: number;
+  actualizados: number;
+  sinCambio: number;
+  items: PropuestaImportacion[];
+}

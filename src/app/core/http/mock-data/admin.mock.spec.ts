@@ -99,4 +99,27 @@ describe('admin mock backend', () => {
     expect(conIva.body).toEqual(jasmine.objectContaining({ ciudad: 'BOGOTÁ', valorSinIva: 30000, valorConIva: 35700 }));
     expect(call('POST', `/proveedor/productos/${id}/precios`, { valor: 1, ciudad: 'Bogotá', fechaVigencia: '2026-10-01' }, prov).status).toBe(409);
   });
+
+  it('lets a constructora review and import supplier prices into its insumos', () => {
+    const demo = token(login('demo', 'admin@demo.local', 'Admin123*'));
+    const busqueda = call('GET', '/proveedores/productos', null, demo, { search: 'cemento', ciudad: 'Bogotá' }).body as {
+      items: { descripcion: string; precios: { id: number; ciudad: string | null; valorSinIva: number }[] }[];
+    };
+    const cemento = busqueda.items.find((p) => p.descripcion.startsWith('CEMENTO'))!;
+    const bogota = cemento.precios.find((p) => p.ciudad === 'BOGOTÁ')!;
+    expect(cemento.precios.some((p) => p.ciudad === 'MEDELLÍN')).toBeFalse();
+
+    const bloque = (call('GET', '/proveedores/productos', null, demo, { search: 'malla' }).body as { items: { precios: { id: number }[] }[] }).items[0].precios[0];
+    const revision = call('POST', '/proveedores/importacion/revision', { precioIds: [bogota.id, bloque.id] }, demo).body as { accion: string; precioActual: number | null }[];
+    expect(revision.map((r) => r.accion)).toEqual(['ACTUALIZAR', 'CREAR']);
+    expect(revision[0].precioActual).toBe(33900);
+
+    const consulta = token(login('demo', 'consulta@demo.local', 'Consulta123'));
+    expect(call('POST', '/proveedores/importacion', { items: [{ precioId: bloque.id }] }, consulta).status).toBe(403);
+
+    const resultado = call('POST', '/proveedores/importacion', { items: [{ precioId: bogota.id }, { precioId: bloque.id }] }, demo).body as { creados: number; actualizados: number };
+    expect([resultado.creados, resultado.actualizados]).toEqual([1, 1]);
+    const otraVez = call('POST', '/proveedores/importacion/revision', { precioIds: [bogota.id, bloque.id] }, demo).body as { accion: string }[];
+    expect(otraVez.map((r) => r.accion)).toEqual(['SIN_CAMBIO', 'SIN_CAMBIO']);
+  });
 });

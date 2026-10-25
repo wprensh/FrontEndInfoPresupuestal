@@ -4,15 +4,20 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { PageQuery, Paged, toParams } from '../../../shared/data/paged-list';
-import { TipoInsumo, UnidadMedida } from '../../mantenimiento/models/mantenimiento.model';
+import { Clasificacion, TipoInsumo, UnidadMedida } from '../../mantenimiento/models/mantenimiento.model';
 import {
+  CatalogoFiltro,
   CreateProveedorDto,
+  ImportarItem,
   PrecioProveedor,
   PrecioProveedorDto,
   ProductoFiltro,
   ProductoProveedor,
   ProductoProveedorDto,
+  ProductoCatalogo,
+  PropuestaImportacion,
   Proveedor,
+  ResultadoImportacion,
 } from '../models/proveedores.model';
 
 /** Acceso HTTP al catálogo propio (`/proveedor/productos`) y al directorio de proveedores (`/proveedores`). */
@@ -72,5 +77,22 @@ export class ProveedoresApiService {
 
   createProveedor(dto: CreateProveedorDto): Observable<Proveedor> {
     return this.http.post<Proveedor>(`${this.apiUrl}/proveedores`, dto);
+  }
+
+  // Consulta de catálogos e importación a los insumos de la constructora
+  buscarProductos(query: PageQuery, filtro: CatalogoFiltro): Observable<Paged<ProductoCatalogo>> {
+    return this.http.get<Paged<ProductoCatalogo>>(`${this.apiUrl}/proveedores/productos`, { params: toParams(query, { ...filtro }) });
+  }
+
+  clasificaciones(): Observable<Paged<Clasificacion>> {
+    return this.http.get<Paged<Clasificacion>>(`${this.apiUrl}/mantenimiento/clasificaciones`, { params: { pageSize: '100', activo: 'true' } });
+  }
+
+  revisarImportacion(precioIds: number[]): Observable<PropuestaImportacion[]> {
+    return this.http.post<PropuestaImportacion[]>(`${this.apiUrl}/proveedores/importacion/revision`, { precioIds });
+  }
+
+  importar(items: ImportarItem[]): Observable<ResultadoImportacion> {
+    return this.http.post<ResultadoImportacion>(`${this.apiUrl}/proveedores/importacion`, { items });
   }
 }
