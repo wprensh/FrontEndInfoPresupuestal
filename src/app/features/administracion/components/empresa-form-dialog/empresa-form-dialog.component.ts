@@ -4,21 +4,38 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { AutofocusDirective } from '../../../../shared/directives/autofocus.directive';
 import { ADMIN_MATERIAL } from '../../material/admin-material';
-import { CreateEmpresaDto, Empresa, PASSWORD_HINT, PASSWORD_PATTERN, UpdateEmpresaDto } from '../../models/admin.model';
+import { TipoEmpresa } from '../../../../core/auth/auth.model';
+import { CreateEmpresaDto, Empresa, PASSWORD_HINT, PASSWORD_PATTERN, TIPO_EMPRESA_API, UpdateEmpresaDto } from '../../models/admin.model';
+
+/** `tipo` fija el tipo de la empresa nueva (por ejemplo, una constructora que da de alta a un proveedor). */
+export interface EmpresaFormData {
+  empresa: Empresa | null;
+  tipo?: TipoEmpresa;
+}
 
 export type EmpresaFormResult = { tipo: 'crear'; dto: CreateEmpresaDto } | { tipo: 'editar'; dto: UpdateEmpresaDto };
 
 const TENANT_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
-/** Alta de empresa (con su primer administrador) o edición de sus datos. */
+/** Alta de empresa o proveedor (con su primer administrador) o edición de sus datos. */
 @Component({
   selector: 'app-empresa-form-dialog',
   imports: [ReactiveFormsModule, AutofocusDirective, ...ADMIN_MATERIAL],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ empresa ? 'Editar empresa' : 'Nueva empresa' }}</h2>
+    <h2 mat-dialog-title>{{ titulo }}</h2>
     <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content class="grid">
+        @if (!empresa && !data.tipo) {
+          <mat-form-field appearance="outline" class="wide">
+            <mat-label>Tipo de empresa</mat-label>
+            <mat-select formControlName="tipo">
+              <mat-option value="CONSTRUCTORA">Constructora: arma APU y presupuestos</mat-option>
+              <mat-option value="PROVEEDOR">Proveedor: publica su catálogo y precios</mat-option>
+            </mat-select>
+            <mat-hint>No cambia después de creada.</mat-hint>
+          </mat-form-field>
+        }
         <mat-form-field appearance="outline">
           <mat-label>Identificador</mat-label>
           <input matInput formControlName="tenantId" />
@@ -73,13 +90,18 @@ const TENANT_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
   `,
 })
 export class EmpresaFormDialogComponent {
-  protected readonly empresa = inject<Empresa | null>(MAT_DIALOG_DATA);
+  protected readonly data = inject<EmpresaFormData>(MAT_DIALOG_DATA);
+  protected readonly empresa = this.data.empresa;
+  protected readonly titulo = this.empresa
+    ? this.empresa.tipo === 'PROVEEDOR' ? 'Editar proveedor' : 'Editar empresa'
+    : this.data.tipo === 'PROVEEDOR' ? 'Nuevo proveedor' : 'Nueva empresa';
   private readonly dialogRef = inject<MatDialogRef<EmpresaFormDialogComponent, EmpresaFormResult>>(MatDialogRef);
   protected readonly passwordHint = PASSWORD_HINT;
 
   private readonly creating = !this.empresa;
 
   protected readonly form = inject(NonNullableFormBuilder).group({
+    tipo: [this.data.tipo ?? ('CONSTRUCTORA' as TipoEmpresa)],
     tenantId: [{ value: this.empresa?.tenantId ?? '', disabled: !this.creating }, this.creating ? [Validators.required, Validators.pattern(TENANT_PATTERN)] : []],
     razonSocial: [this.empresa?.razonSocial ?? '', [Validators.required, Validators.maxLength(200)]],
     nit: [this.empresa?.nit ?? '', Validators.maxLength(20)],
@@ -101,7 +123,7 @@ export class EmpresaFormDialogComponent {
     const datos = { razonSocial: v.razonSocial.trim(), nit: opt(v.nit), email: opt(v.email), telefono: opt(v.telefono) };
     this.dialogRef.close(
       this.creating
-        ? { tipo: 'crear', dto: { ...datos, tenantId: v.tenantId.trim(), adminNombre: v.adminNombre.trim(), adminEmail: v.adminEmail.trim(), adminPassword: v.adminPassword } }
+        ? { tipo: 'crear', dto: { ...datos, tenantId: v.tenantId.trim(), adminNombre: v.adminNombre.trim(), adminEmail: v.adminEmail.trim(), adminPassword: v.adminPassword, tipo: TIPO_EMPRESA_API[v.tipo] } }
         : { tipo: 'editar', dto: { ...datos, activo: v.activo } },
     );
   }

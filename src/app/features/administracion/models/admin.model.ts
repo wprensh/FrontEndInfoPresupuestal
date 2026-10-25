@@ -1,9 +1,13 @@
-import { Accion, Modulo } from '../../../core/auth/auth.model';
+import { Accion, Modulo, TipoEmpresa } from '../../../core/auth/auth.model';
+
+/** La API recibe el tipo como su enum numérico (`TipoEmpresa` en C#). */
+export const TIPO_EMPRESA_API: Record<TipoEmpresa, number> = { CONSTRUCTORA: 0, PROVEEDOR: 1 };
 
 export interface Empresa {
   id: string;
   tenantId: string;
   razonSocial: string;
+  tipo: TipoEmpresa;
   nit: string | null;
   email: string | null;
   telefono: string | null;
@@ -20,6 +24,7 @@ export interface CreateEmpresaDto {
   adminNombre: string;
   adminEmail: string;
   adminPassword: string;
+  tipo: number;
 }
 
 export type UpdateEmpresaDto = Pick<Empresa, 'razonSocial' | 'nit' | 'email' | 'telefono' | 'activo'>;
