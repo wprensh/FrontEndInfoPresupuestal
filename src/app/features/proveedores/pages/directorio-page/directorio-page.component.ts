@@ -29,7 +29,7 @@ import { Proveedor } from '../../models/proveedores.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../../shared/ui/list-page.styles.scss',
   template: `
-    <app-page-header title="Proveedores" [subtitle]="list.total() === 1 ? '1 proveedor publica su catálogo y precios' : list.total() + ' proveedores publican su catálogo y precios'">
+    <app-page-header title="Directorio de proveedores" [subtitle]="list.total() === 1 ? '1 proveedor publica su catálogo y precios' : list.total() + ' proveedores publican su catálogo y precios'">
       <button mat-flat-button *appIfCan="['proveedores', 'insertar']" (click)="create()"><mat-icon>add_business</mat-icon>Nuevo proveedor</button>
     </app-page-header>
     <div class="toolbar">
@@ -75,7 +75,7 @@ import { Proveedor } from '../../models/proveedores.model';
     </div>
     <mat-paginator [length]="list.total()" [pageIndex]="list.page() - 1" [pageSize]="list.pageSize()" [pageSizeOptions]="[20, 50, 100]" (page)="onPage($event)" />
   `,
-  styles: `:host { display: block; padding: 16px 20px; max-width: 1440px; margin: 0 auto; } .code { margin-left: 6px; font-size: 12px; } .num { text-align: right; font-variant-numeric: tabular-nums; }`,
+  styles: `.code { margin-left: 6px; font-size: 12px; } .num { text-align: right; font-variant-numeric: tabular-nums; }`,
 })
 export class DirectorioPageComponent implements OnInit {
   private readonly api = inject(ProveedoresApiService);

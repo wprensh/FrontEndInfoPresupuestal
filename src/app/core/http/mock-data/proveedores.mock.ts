@@ -91,6 +91,7 @@ seed('CEM-50', 'CEMENTO GRIS USO GENERAL 50 KG', 6, 'Argos', 'Cementos', [[null,
 seed('VAR-12', 'VARILLA CORRUGADA 1/2" X 6 M', 1, 'Diaco', 'Aceros', [[null, 28500, false], ['BOGOTÁ', 34000, true]]);
 seed('BLK-15', 'BLOQUE DE CONCRETO 15 X 20 X 40', 1, 'Ladrillera Santa Fe', 'Mampostería', [[null, 2900, false]]);
 seed('PVC-4', 'TUBO PVC SANITARIO 4" X 6 M', 1, 'Pavco', 'Hidráulicos', [[null, 98000, true], ['CALI', 81000, false]]);
+seed('MAL-15', 'MALLA ELECTROSOLDADA 15 X 15 CM 4 MM', 1, 'Gerdau', 'Aceros', [[null, 185000, false]]);
 seed('PIN-T1', 'PINTURA VINILO TIPO 1 BLANCO', 7, 'Pintuco', 'Pinturas', [[null, 78000, false]]);
 precios.push({ id: ++precioSeq, tenantId: 'ferreteria', productoId: productos[0].id, ciudad: null, valor: 30500, incluyeIva: false, ivaPct: 0.19, moneda: 'COP', fechaVigencia: '2026-06-01' });
 
@@ -173,3 +174,58 @@ export function handleProveedoresMock(
   return noContent();
 }
 
+
+// ---------------- Consulta de las constructoras: /proveedores/productos ----------------
+
+/** Productos activos de los proveedores que `razonSocial` reconoce (activos), con precios vigentes por ciudad. */
+export function buscarProductosMock(req: HttpRequest<unknown>, razonSocial: (tenant: string) => string | undefined, tipos: Catalogo, unidades: Catalogo): MockResult {
+  const proveedor = req.params.get('proveedor');
+  const tipo = req.params.get('tipoInsumoId');
+  const ciudad = normCiudad(req.params.get('ciudad'));
+  const filas = productos
+    .filter((p) => p.activo && razonSocial(p.tenantId) && (!proveedor || p.tenantId === proveedor) && (!tipo || p.tipoInsumoId === Number(tipo)))
+    .map((p) => {
+      const dto = productoDto(p, tipos, unidades, true);
+      return { ...dto, proveedor: p.tenantId, razonSocial: razonSocial(p.tenantId)!, precios: dto.precios.filter((x) => !ciudad || x.ciudad === null || x.ciudad === ciudad) };
+    })
+    .filter((p) => !ciudad || p.precios.length > 0)
+    .sort((a, b) => a.descripcion.localeCompare(b.descripcion));
+  return page(req, filas, (p) => `${p.codigo} ${p.descripcion} ${p.marca ?? ''} ${p.categoria ?? ''}`);
+}
+
+export interface PrecioImportable {
+  precioId: number;
+  productoId: string;
+  proveedor: string;
+  codigo: string;
+  descripcion: string;
+  tipoInsumoId: number;
+  unidadMedidaId: number;
+  categoria: string | null;
+  ciudad: string | null;
+  valorSinIva: number;
+  fechaVigencia: string;
+}
+
+/** Datos de cada precio pedido, o null si alguno no existe o su producto ya no está publicado. */
+export function preciosImportables(ids: number[], activo: (tenant: string) => boolean): PrecioImportable[] | null {
+  const filas = ids.map((id) => {
+    const precio = precios.find((p) => p.id === id);
+    const producto = precio && productos.find((p) => p.id === precio.productoId && p.activo && activo(p.tenantId));
+    if (!precio || !producto) return null;
+    return {
+      precioId: id,
+      productoId: producto.id,
+      proveedor: producto.tenantId,
+      codigo: producto.codigo,
+      descripcion: producto.descripcion,
+      tipoInsumoId: producto.tipoInsumoId,
+      unidadMedidaId: producto.unidadMedidaId,
+      categoria: producto.categoria,
+      ciudad: precio.ciudad,
+      valorSinIva: precioDto(precio).valorSinIva,
+      fechaVigencia: precio.fechaVigencia,
+    };
+  });
+  return filas.every((f) => f !== null) ? (filas as PrecioImportable[]) : null;
+}

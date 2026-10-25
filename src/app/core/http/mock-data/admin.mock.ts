@@ -2,7 +2,7 @@ import { HttpRequest } from '@angular/common/http';
 
 import { Body, MockResult, noContent, norm, now, ok, page, problem } from './mock-http';
 import { handlePresupuestosMock } from './presupuestos.mock';
-import { contarProductos, handleProveedoresMock } from './proveedores.mock';
+import { PrecioImportable, buscarProductosMock, contarProductos, handleProveedoresMock, preciosImportables } from './proveedores.mock';
 
 /**
  * Backend simulado de autenticación, administración y mantenimiento (solo demo y desarrollo).
@@ -356,6 +356,93 @@ const precioDto = (p: PrecioRow) => {
   return rest;
 };
 
+const razonProveedor = (tenant: string) => empresas.find((e) => e.tenantId === tenant && e.tipo === 'PROVEEDOR' && e.activo)?.razonSocial;
+
+/**
+ * Igual que la API: propone por cada precio crear un insumo, actualizar el precio de uno igual (tipo,
+ * unidad y descripción) o nada; al importar aplica la propuesta con el valor sin IVA y vigencia de hoy.
+ */
+function importacion(tenant: string, importar: boolean, body: Body): MockResult {
+  const items = importar ? ((body['items'] as { precioId: number; clasificacionId: number | null }[]) ?? []) : ((body['precioIds'] as number[]) ?? []).map((precioId) => ({ precioId, clasificacionId: null }));
+  if (items.length === 0) return problem(400, 'Validation', 'Elige al menos un precio.');
+  const filas = preciosImportables([...new Set(items.map((i) => i.precioId))], (t) => !!razonProveedor(t));
+  if (!filas) return problem(404, 'Importacion.PrecioNoEncontrado', 'Algún precio ya no está publicado.');
+
+  const propios = insumos.filter((i) => i.tenantId === tenant);
+  const clasifPropias = clasificaciones.filter((k) => k.tenantId === tenant && k.activo);
+  const vistos = new Set<string>();
+  const propuestas = filas.map((f: PrecioImportable) => {
+    const clave = `${f.tipoInsumoId}|${f.unidadMedidaId}|${norm(f.descripcion)}`;
+    const insumo = propios.find((i) => `${i.tipoInsumoId}|${i.unidadMedidaId}|${norm(i.descripcion)}` === clave);
+    const actual = insumo && insumoDto(insumo).precio?.valorUnitario;
+    const accion = vistos.has(clave) ? 'REPETIDO' : !insumo ? 'CREAR' : actual === f.valorSinIva ? 'SIN_CAMBIO' : 'ACTUALIZAR';
+    vistos.add(clave);
+    const sugerida = !insumo && f.categoria ? clasifPropias.find((k) => norm(k.nombre) === norm(f.categoria!)) : undefined;
+    const clasificacionId = insumo?.clasificacionId ?? sugerida?.id ?? null;
+    return {
+      precioId: f.precioId,
+      productoId: f.productoId,
+      proveedor: f.proveedor,
+      razonSocial: razonProveedor(f.proveedor)!,
+      codigoProveedor: f.codigo,
+      descripcion: f.descripcion,
+      tipoInsumoId: f.tipoInsumoId,
+      tipo: tipos.find((t) => t.id === f.tipoInsumoId)?.nombre ?? '',
+      unidadMedidaId: f.unidadMedidaId,
+      unidad: unidades.find((u) => u.id === f.unidadMedidaId)?.codigo ?? '',
+      ciudad: f.ciudad,
+      valorSinIva: f.valorSinIva,
+      fechaProveedor: f.fechaVigencia,
+      accion,
+      insumoId: insumo?.id ?? null,
+      insumoCodigo: insumo?.codigo ?? null,
+      precioActual: actual ?? null,
+      clasificacionId,
+      clasificacion: clasificaciones.find((k) => k.id === clasificacionId)?.nombre ?? null,
+    };
+  });
+  if (!importar) return ok(propuestas);
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  let creados = 0;
+  let actualizados = 0;
+  let sinCambio = 0;
+  const aplicadas = [];
+  for (const p of propuestas) {
+    const fuente = `${p.razonSocial} ${p.codigoProveedor}${p.ciudad ? ' ' + p.ciudad : ''} (sin IVA, lista del ${p.fechaProveedor})`.slice(0, 120);
+    if (p.accion === 'CREAR') {
+      const prefijo = tipos.find((t) => t.id === p.tipoInsumoId)!.prefijo;
+      const ultimo = insumos.filter((i) => i.tenantId === tenant && i.codigo.startsWith(`${prefijo}-`)).map((i) => Number(i.codigo.split('-')[1])).reduce((a, b) => Math.max(a, b), 0);
+      const elegida = items.find((i) => i.precioId === p.precioId)?.clasificacionId;
+      const nuevo: InsumoRow = {
+        id: crypto.randomUUID(),
+        tenantId: tenant,
+        codigo: `${prefijo}-${String(ultimo + 1).padStart(4, '0')}`,
+        tipoInsumoId: p.tipoInsumoId,
+        clasificacionId: elegida ?? p.clasificacionId,
+        unidadMedidaId: p.unidadMedidaId,
+        descripcion: p.descripcion,
+        activo: true,
+        actualizadoEn: now(),
+      };
+      insumos.push(nuevo);
+      precios.push({ id: ++precioSeq, tenantId: tenant, insumoId: nuevo.id, valorUnitario: p.valorSinIva, moneda: 'COP', fechaVigencia: hoy, fuente });
+      aplicadas.push({ ...p, insumoId: nuevo.id, insumoCodigo: nuevo.codigo, clasificacionId: nuevo.clasificacionId });
+      creados++;
+    } else if (p.accion === 'ACTUALIZAR') {
+      const deHoy = precios.find((x) => x.insumoId === p.insumoId && x.fechaVigencia === hoy);
+      if (deHoy) Object.assign(deHoy, { valorUnitario: p.valorSinIva, fuente });
+      else precios.push({ id: ++precioSeq, tenantId: tenant, insumoId: p.insumoId!, valorUnitario: p.valorSinIva, moneda: 'COP', fechaVigencia: hoy, fuente });
+      aplicadas.push(p);
+      actualizados++;
+    } else if (p.accion === 'SIN_CAMBIO') {
+      aplicadas.push(p);
+      sinCambio++;
+    }
+  }
+  return ok({ creados, actualizados, sinCambio, items: aplicadas });
+}
+
 const proveedorDto = (e: EmpresaRow) => ({
   id: e.id,
   tenantId: e.tenantId,
@@ -405,8 +492,18 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
     if (tipoTenant !== (propio ? 'PROVEEDOR' : 'CONSTRUCTORA')) {
       return problem(403, propio ? 'Proveedores.SoloProveedor' : 'Proveedores.SoloConstructora', propio ? 'Solo una empresa proveedora tiene catálogo propio.' : 'Solo las constructoras consultan el directorio de proveedores.');
     }
-    if (!can(c, propio ? 'catalogo-proveedor' : 'proveedores', accion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    // Buscar e importar solo leen el directorio; los permisos de insumos se revisan aparte.
+    const accionProveedores = recurso === 'productos' || recurso === 'importacion' ? 'ver' : accion;
+    if (!can(c, propio ? 'catalogo-proveedor' : 'proveedores', propio ? accion : accionProveedores)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
     if (propio) return handleProveedoresMock(req, c.tenant, id, sub, subId, body, tipos, unidades);
+    if (recurso === 'productos') return buscarProductosMock(req, razonProveedor, tipos, unidades);
+    if (recurso === 'importacion') {
+      const importar = id !== 'revision';
+      if (!can(c, 'insumos', importar ? 'insertar' : 'ver') || (importar && !can(c, 'precios-insumo', 'insertar'))) {
+        return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+      }
+      return importacion(c.tenant, importar, body);
+    }
     if (req.method === 'POST') {
       const tenantId = String(body['tenantId']);
       if (empresas.some((e) => e.tenantId === tenantId)) return problem(409, 'Empresas.Duplicada', `Ya existe la empresa '${tenantId}'.`);

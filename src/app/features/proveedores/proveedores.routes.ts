@@ -12,12 +12,24 @@ export const MI_CATALOGO_ROUTES: Routes = [
   },
 ];
 
-/** Directorio de proveedores para las constructoras (`/proveedores`). */
+/** Sección Proveedores de las constructoras (`/proveedores`): catálogos e importación, y el directorio. */
 export const DIRECTORIO_ROUTES: Routes = [
   {
     path: '',
-    title: 'Proveedores | InfoPresupuestal',
     providers: [ProveedoresApiService],
-    loadComponent: () => import('./pages/directorio-page/directorio-page.component').then((m) => m.DirectorioPageComponent),
+    loadComponent: () => import('./pages/proveedores-layout/proveedores-layout.component').then((m) => m.ProveedoresLayoutComponent),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'catalogos' },
+      {
+        path: 'catalogos',
+        title: 'Catálogos de proveedores | InfoPresupuestal',
+        loadComponent: () => import('./pages/catalogos-page/catalogos-page.component').then((m) => m.CatalogosPageComponent),
+      },
+      {
+        path: 'directorio',
+        title: 'Proveedores | InfoPresupuestal',
+        loadComponent: () => import('./pages/directorio-page/directorio-page.component').then((m) => m.DirectorioPageComponent),
+      },
+    ],
   },
 ];
