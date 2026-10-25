@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 const response = (permisos: string[], esSuperAdmin = false): LoginResponse => ({
   token: 't',
   expiraEn: new Date(Date.now() + 3600_000).toISOString(),
-  usuario: { id: '1', email: 'a@b.co', nombre: 'Ana Torres', empresa: 'demo', razonSocial: 'Demo', rol: 'Compras', esSuperAdmin },
+  usuario: { id: '1', email: 'a@b.co', nombre: 'Ana Torres', empresa: 'demo', razonSocial: 'Demo', rol: 'Compras', esSuperAdmin, tipoEmpresa: 'CONSTRUCTORA' },
   permisos,
 });
 

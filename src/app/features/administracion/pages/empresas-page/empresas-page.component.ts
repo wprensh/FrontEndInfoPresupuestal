@@ -12,7 +12,7 @@ import { PagedList } from '../../../../shared/data/paged-list';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { SearchBoxComponent } from '../../../../shared/ui/search-box/search-box.component';
-import { EmpresaFormDialogComponent, EmpresaFormResult } from '../../components/empresa-form-dialog/empresa-form-dialog.component';
+import { EmpresaFormData, EmpresaFormDialogComponent, EmpresaFormResult } from '../../components/empresa-form-dialog/empresa-form-dialog.component';
 import { AdminApiService } from '../../data-access/admin-api.service';
 import { ADMIN_MATERIAL } from '../../material/admin-material';
 import { Empresa } from '../../models/admin.model';
@@ -45,6 +45,10 @@ import { Empresa } from '../../models/admin.model';
         <ng-container matColumnDef="razonSocial">
           <th mat-header-cell *matHeaderCellDef>Razón social</th>
           <td mat-cell *matCellDef="let e">{{ e.razonSocial }}</td>
+        </ng-container>
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let e">{{ e.tipo === 'PROVEEDOR' ? 'Proveedor' : 'Constructora' }}</td>
         </ng-container>
         <ng-container matColumnDef="nit">
           <th mat-header-cell *matHeaderCellDef>NIT</th>
@@ -84,7 +88,7 @@ export class EmpresasPageComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
 
-  protected readonly columns = ['tenantId', 'razonSocial', 'nit', 'estado', 'creada', 'acciones'];
+  protected readonly columns = ['tenantId', 'razonSocial', 'tipo', 'nit', 'estado', 'creada', 'acciones'];
   protected readonly list = new PagedList<Empresa>((q) => this.api.listEmpresas(q));
 
   ngOnInit(): void {
@@ -104,7 +108,7 @@ export class EmpresasPageComponent implements OnInit {
 
   protected async open(empresa: Empresa | null): Promise<void> {
     const result = await firstValueFrom(
-      this.dialog.open<EmpresaFormDialogComponent, Empresa | null, EmpresaFormResult>(EmpresaFormDialogComponent, { data: empresa, width: '640px', maxWidth: '95vw' }).afterClosed(),
+      this.dialog.open<EmpresaFormDialogComponent, EmpresaFormData, EmpresaFormResult>(EmpresaFormDialogComponent, { data: { empresa }, width: '640px', maxWidth: '95vw' }).afterClosed(),
     );
     if (!result) return;
     const saved =

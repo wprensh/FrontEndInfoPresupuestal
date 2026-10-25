@@ -76,4 +76,27 @@ describe('admin mock backend', () => {
     expect(call('POST', `/presupuestos/${pre.id}/recalcular`, {}, consulta).status).toBe(403);
     expect(call('POST', `/presupuestos/${pre.id}/duplicar`, {}, consulta).status).toBe(403);
   });
+
+  it('separates supplier catalogues from constructora screens', () => {
+    const proveedor = login('ferreteria', 'ventas@ferreteria.local', 'Proveedor123');
+    const sesion = proveedor.body as { usuario: { tipoEmpresa: string }; permisos: string[] };
+    expect(sesion.usuario.tipoEmpresa).toBe('PROVEEDOR');
+    expect(sesion.permisos).toContain('catalogo-proveedor:insertar');
+    expect(sesion.permisos).not.toContain('insumos:ver');
+
+    const prov = token(proveedor);
+    const demo = token(login('demo', 'admin@demo.local', 'Admin123*'));
+    expect(call('GET', '/proveedor/productos', null, demo).status).toBe(403);
+    expect(call('GET', '/proveedores', null, prov).status).toBe(403);
+    expect(total(call('GET', '/proveedores', null, demo))).toBeGreaterThan(0);
+
+    const creado = call('POST', '/proveedor/productos', { codigo: 'ark-1', descripcion: 'Arena de río', tipoInsumoId: 1, unidadMedidaId: 4, activo: true }, prov);
+    expect(creado.status).toBe(201);
+    const id = (creado.body as { id: string }).id;
+    expect(call('POST', '/proveedor/productos', { codigo: 'ARK-1', descripcion: 'Otra', tipoInsumoId: 1, unidadMedidaId: 4 }, prov).status).toBe(409);
+
+    const conIva = call('POST', `/proveedor/productos/${id}/precios`, { valor: 35700, incluyeIva: true, ivaPct: 0.19, ciudad: 'bogotá', fechaVigencia: '2026-10-01' }, prov);
+    expect(conIva.body).toEqual(jasmine.objectContaining({ ciudad: 'BOGOTÁ', valorSinIva: 30000, valorConIva: 35700 }));
+    expect(call('POST', `/proveedor/productos/${id}/precios`, { valor: 1, ciudad: 'Bogotá', fechaVigencia: '2026-10-01' }, prov).status).toBe(409);
+  });
 });

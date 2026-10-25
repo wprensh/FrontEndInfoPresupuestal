@@ -115,13 +115,16 @@ export class ShellComponent {
   );
 
   protected readonly links = computed<NavLink[]>(() => [
+    ...(this.auth.esProveedor() && this.auth.can('catalogo-proveedor') ? [{ path: '/mi-catalogo', label: 'Mi catálogo', icon: 'storefront' }] : []),
     ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/presupuesto', label: 'Partidas', icon: 'table_view' }] : []),
     ...(this.auth.can('presupuestos') ? [{ path: '/presupuestos', label: 'Presupuestos', icon: 'request_quote' }] : []),
     ...(this.auth.can('apu') ? [{ path: '/apu', label: 'APU', icon: 'calculate' }] : []),
     ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }] : []),
-    ...(this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
+    // Un proveedor solo consulta unidades y tipos desde su formulario: no necesita la pestaña de Mantenimiento.
+    ...(!this.auth.esProveedor() && this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
       ? [{ path: '/mantenimiento', label: 'Mantenimiento', icon: 'inventory_2' }]
       : []),
+    ...(!this.auth.esProveedor() && this.auth.can('proveedores') ? [{ path: '/proveedores', label: 'Proveedores', icon: 'local_shipping' }] : []),
     ...(this.auth.canAny(['usuarios', 'roles']) ? [{ path: '/administracion', label: 'Administración', icon: 'admin_panel_settings' }] : []),
   ]);
 
@@ -129,7 +132,7 @@ export class ShellComponent {
   protected readonly settingsLink = computed(() =>
     this.auth.canAny(['usuarios', 'roles'])
       ? '/administracion'
-      : this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
+      : !this.auth.esProveedor() && this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
         ? '/mantenimiento'
         : null,
   );

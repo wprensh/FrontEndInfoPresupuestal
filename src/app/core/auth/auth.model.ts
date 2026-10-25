@@ -15,7 +15,12 @@ export type Modulo =
   | 'precios-insumo'
   | 'productos'
   | 'apu'
-  | 'presupuestos';
+  | 'presupuestos'
+  | 'proveedores'
+  | 'catalogo-proveedor';
+
+/** Una constructora arma presupuestos; un proveedor publica su catálogo de precios. */
+export type TipoEmpresa = 'CONSTRUCTORA' | 'PROVEEDOR';
 
 export interface SesionUsuario {
   id: string;
@@ -26,6 +31,7 @@ export interface SesionUsuario {
   razonSocial: string;
   rol: string;
   esSuperAdmin: boolean;
+  tipoEmpresa: TipoEmpresa;
 }
 
 export interface LoginRequest {

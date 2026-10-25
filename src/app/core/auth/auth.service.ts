@@ -26,6 +26,8 @@ export class AuthService {
   readonly token = computed(() => this.session()?.token ?? null);
   readonly isAuthenticated = computed(() => this.session() !== null);
   readonly isSuperAdmin = computed(() => this.user()?.esSuperAdmin === true);
+  /** La empresa de la sesión es un proveedor (publica su catálogo) y no una constructora. */
+  readonly esProveedor = computed(() => this.user()?.tipoEmpresa === 'PROVEEDOR');
   private readonly permisos = computed(() => new Set(this.session()?.permisos ?? []));
 
   /** Empresa sobre la que actúa el superadministrador (header `X-Tenant-Id`); null = la propia. */

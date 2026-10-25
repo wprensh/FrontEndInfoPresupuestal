@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, canView, guestGuard, inicioSegunPermisos } from './core/auth/auth.guards';
+import { authGuard, canView, guestGuard, inicioSegunPermisos, soloConstructora, soloProveedor } from './core/auth/auth.guards';
 import { ShellComponent } from './core/layout/shell/shell.component';
 
 /** Cada feature se carga en diferido a través de su archivo `*.routes.ts`. */
@@ -24,6 +24,16 @@ export const routes: Routes = [
         path: 'mantenimiento',
         canMatch: [canView('insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo')],
         loadChildren: () => import('./features/mantenimiento/mantenimiento.routes').then((m) => m.MANTENIMIENTO_ROUTES),
+      },
+      {
+        path: 'mi-catalogo',
+        canMatch: [soloProveedor, canView('catalogo-proveedor')],
+        loadChildren: () => import('./features/proveedores/proveedores.routes').then((m) => m.MI_CATALOGO_ROUTES),
+      },
+      {
+        path: 'proveedores',
+        canMatch: [soloConstructora, canView('proveedores')],
+        loadChildren: () => import('./features/proveedores/proveedores.routes').then((m) => m.DIRECTORIO_ROUTES),
       },
       {
         path: 'administracion',

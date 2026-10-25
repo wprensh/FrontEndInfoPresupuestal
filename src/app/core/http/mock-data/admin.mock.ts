@@ -2,6 +2,7 @@ import { HttpRequest } from '@angular/common/http';
 
 import { Body, MockResult, noContent, norm, now, ok, page, problem } from './mock-http';
 import { handlePresupuestosMock } from './presupuestos.mock';
+import { contarProductos, handleProveedoresMock } from './proveedores.mock';
 
 /**
  * Backend simulado de autenticación, administración y mantenimiento (solo demo y desarrollo).
@@ -10,12 +11,15 @@ import { handlePresupuestosMock } from './presupuestos.mock';
  */
 
 type Accion = 'ver' | 'insertar' | 'editar' | 'eliminar';
+type TipoEmpresa = 'CONSTRUCTORA' | 'PROVEEDOR';
 
 interface ModuloDef {
   codigo: string;
   nombre: string;
   grupo: string;
   alcance: 'Tenant' | 'Global' | 'Plataforma';
+  /** Solo para constructoras o solo para proveedores; sin valor, para ambas. */
+  soloPara?: TipoEmpresa;
 }
 
 interface PermisoRow {
@@ -30,6 +34,7 @@ interface EmpresaRow {
   id: string;
   tenantId: string;
   razonSocial: string;
+  tipo: TipoEmpresa;
   nit: string | null;
   email: string | null;
   telefono: string | null;
@@ -90,19 +95,23 @@ interface PrecioRow {
 
 export type { MockResult } from './mock-http';
 
+// Igual que Common/Security/Modulos.cs.
 const MODULOS: ModuloDef[] = [
   { codigo: 'empresas', nombre: 'Empresas', grupo: 'Administración', alcance: 'Plataforma' },
   { codigo: 'usuarios', nombre: 'Usuarios', grupo: 'Administración', alcance: 'Tenant' },
   { codigo: 'roles', nombre: 'Roles y permisos', grupo: 'Administración', alcance: 'Tenant' },
-  { codigo: 'clasificaciones', nombre: 'Clasificaciones', grupo: 'Mantenimiento', alcance: 'Tenant' },
+  { codigo: 'clasificaciones', nombre: 'Clasificaciones', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'unidades-medida', nombre: 'Unidades de medida', grupo: 'Mantenimiento', alcance: 'Global' },
   { codigo: 'tipos-insumo', nombre: 'Tipos de insumo', grupo: 'Mantenimiento', alcance: 'Global' },
-  { codigo: 'insumos', nombre: 'Insumos', grupo: 'Mantenimiento', alcance: 'Tenant' },
-  { codigo: 'precios-insumo', nombre: 'Precios de insumos', grupo: 'Mantenimiento', alcance: 'Tenant' },
-  { codigo: 'productos', nombre: 'Productos', grupo: 'Catálogo', alcance: 'Tenant' },
-  { codigo: 'apu', nombre: 'Análisis de precios unitarios', grupo: 'Presupuestos', alcance: 'Tenant' },
-  { codigo: 'presupuestos', nombre: 'Presupuestos de obra', grupo: 'Presupuestos', alcance: 'Tenant' },
+  { codigo: 'insumos', nombre: 'Insumos', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'precios-insumo', nombre: 'Precios de insumos', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'proveedores', nombre: 'Proveedores', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'apu', nombre: 'Análisis de precios unitarios', grupo: 'Presupuestos', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'presupuestos', nombre: 'Presupuestos de obra', grupo: 'Presupuestos', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'productos', nombre: 'Productos', grupo: 'Operación', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'catalogo-proveedor', nombre: 'Catálogo y precios del proveedor', grupo: 'Proveedor', alcance: 'Tenant', soloPara: 'PROVEEDOR' },
 ];
+const paraTipo = (tipo: TipoEmpresa) => MODULOS.filter((m) => m.alcance !== 'Plataforma' && (!m.soloPara || m.soloPara === tipo));
 const ACCIONES: Accion[] = ['ver', 'insertar', 'editar', 'eliminar'];
 const asignables = (m: ModuloDef): Accion[] => (m.alcance === 'Tenant' ? ACCIONES : m.alcance === 'Global' ? ['ver'] : []);
 
@@ -111,13 +120,13 @@ let seeding = true;
 let seedSeq = 0;
 const uuid = () => (seeding ? `00000000-0000-4000-8000-${String(++seedSeq).padStart(12, '0')}` : crypto.randomUUID());
 
-const permisosCompletos = (): PermisoRow[] =>
-  MODULOS.filter((m) => m.alcance !== 'Plataforma').map((m) => {
+const permisosCompletos = (tipo: TipoEmpresa): PermisoRow[] =>
+  paraTipo(tipo).map((m) => {
     const a = asignables(m);
     return { modulo: m.codigo, ver: true, insertar: a.includes('insertar'), editar: a.includes('editar'), eliminar: a.includes('eliminar') };
   });
-const permisosLectura = (): PermisoRow[] =>
-  MODULOS.filter((m) => m.alcance !== 'Plataforma').map((m) => ({ modulo: m.codigo, ver: true, insertar: false, editar: false, eliminar: false }));
+const permisosLectura = (tipo: TipoEmpresa): PermisoRow[] =>
+  paraTipo(tipo).map((m) => ({ modulo: m.codigo, ver: true, insertar: false, editar: false, eliminar: false }));
 // Igual que Rol.PermisosProveedor() en la API: mantiene insumos y precios sin eliminar.
 const permisosProveedor = (): PermisoRow[] => [
   { modulo: 'insumos', ver: true, insertar: true, editar: true, eliminar: false },
@@ -133,12 +142,17 @@ const empresas: EmpresaRow[] = [];
 const roles: RolRow[] = [];
 const usuarios: UsuarioRow[] = [];
 
-function provision(tenantId: string, razonSocial: string, admin: { nombre: string; email: string; password: string; superAdmin?: boolean }): void {
-  empresas.push({ id: uuid(), tenantId, razonSocial, nit: null, email: null, telefono: null, activo: true, creadoEn: now() });
-  const administrador: RolRow = { id: uuid(), tenantId, nombre: 'Administrador', descripcion: 'Acceso completo a la empresa.', esSistema: true, permisos: permisosCompletos() };
-  const consulta: RolRow = { id: uuid(), tenantId, nombre: 'Consulta', descripcion: 'Solo lectura.', esSistema: true, permisos: permisosLectura() };
+function provision(
+  tenantId: string,
+  razonSocial: string,
+  admin: { nombre: string; email: string; password: string; superAdmin?: boolean },
+  tipo: TipoEmpresa = 'CONSTRUCTORA',
+): void {
+  empresas.push({ id: uuid(), tenantId, razonSocial, tipo, nit: null, email: null, telefono: null, activo: true, creadoEn: now() });
+  const administrador: RolRow = { id: uuid(), tenantId, nombre: 'Administrador', descripcion: 'Acceso completo a la empresa.', esSistema: true, permisos: permisosCompletos(tipo) };
+  const consulta: RolRow = { id: uuid(), tenantId, nombre: 'Consulta', descripcion: 'Solo lectura.', esSistema: true, permisos: permisosLectura(tipo) };
   roles.push(administrador, consulta);
-  if (tenantId !== 'sistema') {
+  if (tenantId !== 'sistema' && tipo === 'CONSTRUCTORA') {
     roles.push({ id: uuid(), tenantId, nombre: 'Proveedor', descripcion: 'Mantiene insumos y precios del catálogo.', esSistema: true, permisos: permisosProveedor() });
   }
   usuarios.push({
@@ -158,6 +172,8 @@ function provision(tenantId: string, razonSocial: string, admin: { nombre: strin
 provision('sistema', 'InfoPresupuestal (plataforma)', { nombre: 'Superadministrador', email: 'superadmin@infopresupuestal.local', password: 'Admin123*', superAdmin: true });
 provision('demo', 'Empresa Demo S.A.S.', { nombre: 'Administrador Demo', email: 'admin@demo.local', password: 'Admin123*' });
 provision('acme', 'Acme Construcciones S.A.S.', { nombre: 'Administrador Acme', email: 'admin@acme.local', password: 'Admin123*' });
+provision('ferreteria', 'Ferretería El Constructor S.A.S.', { nombre: 'Ventas Ferretería', email: 'ventas@ferreteria.local', password: 'Proveedor123' }, 'PROVEEDOR');
+Object.assign(empresas.at(-1)!, { nit: '900123456-7', email: 'ventas@ferreteria.local', telefono: '601 555 0101' });
 usuarios.push({
   id: uuid(),
   tenantId: 'demo',
@@ -300,7 +316,16 @@ function can(c: Caller, modulo: string, accion: Accion): boolean {
 
 const sesion = (u: UsuarioRow) => {
   const empresa = empresas.find((e) => e.tenantId === u.tenantId)!;
-  return { id: u.id, email: u.email, nombre: u.nombre, empresa: u.tenantId, razonSocial: empresa.razonSocial, rol: roles.find((r) => r.id === u.rolId)?.nombre ?? '', esSuperAdmin: u.esSuperAdmin };
+  return {
+    id: u.id,
+    email: u.email,
+    nombre: u.nombre,
+    empresa: u.tenantId,
+    razonSocial: empresa.razonSocial,
+    rol: roles.find((r) => r.id === u.rolId)?.nombre ?? '',
+    esSuperAdmin: u.esSuperAdmin,
+    tipoEmpresa: empresa.tipo,
+  };
 };
 
 const usuarioDto = (u: UsuarioRow) => {
@@ -331,6 +356,17 @@ const precioDto = (p: PrecioRow) => {
   return rest;
 };
 
+const proveedorDto = (e: EmpresaRow) => ({
+  id: e.id,
+  tenantId: e.tenantId,
+  razonSocial: e.razonSocial,
+  nit: e.nit,
+  email: e.email,
+  telefono: e.telefono,
+  productos: contarProductos(e.tenantId),
+  creadoEn: e.creadoEn,
+});
+
 const METHOD_ACCION: Record<string, Accion> = { GET: 'ver', POST: 'insertar', PUT: 'editar', DELETE: 'eliminar' };
 
 // ---------------- Rutas ----------------
@@ -352,7 +388,8 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
 
   const [, seccion, recurso, id, sub, subId] = path.split('/');
   const presupuestal = seccion === 'apus' || seccion === 'presupuestos';
-  if (!presupuestal && seccion !== 'auth' && seccion !== 'admin' && seccion !== 'mantenimiento') return null;
+  const proveedores = seccion === 'proveedor' || seccion === 'proveedores';
+  if (!presupuestal && !proveedores && seccion !== 'auth' && seccion !== 'admin' && seccion !== 'mantenimiento') return null;
 
   const c = caller(req);
   if (!c) return problem(401, 'Unauthorized', 'Inicia sesión de nuevo.');
@@ -361,6 +398,26 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
   if (path === '/auth/me') return ok({ usuario: sesion(c.user), permisos: permisosDe(c.user) });
 
   const accion = METHOD_ACCION[req.method] ?? 'ver';
+  const tipoTenant = empresas.find((e) => e.tenantId === c.tenant)!.tipo;
+  if (proveedores) {
+    // /proveedor/productos es el catálogo propio (solo proveedores); /proveedores, el directorio (solo constructoras).
+    const propio = seccion === 'proveedor';
+    if (tipoTenant !== (propio ? 'PROVEEDOR' : 'CONSTRUCTORA')) {
+      return problem(403, propio ? 'Proveedores.SoloProveedor' : 'Proveedores.SoloConstructora', propio ? 'Solo una empresa proveedora tiene catálogo propio.' : 'Solo las constructoras consultan el directorio de proveedores.');
+    }
+    if (!can(c, propio ? 'catalogo-proveedor' : 'proveedores', accion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    if (propio) return handleProveedoresMock(req, c.tenant, id, sub, subId, body, tipos, unidades);
+    if (req.method === 'POST') {
+      const tenantId = String(body['tenantId']);
+      if (empresas.some((e) => e.tenantId === tenantId)) return problem(409, 'Empresas.Duplicada', `Ya existe la empresa '${tenantId}'.`);
+      provision(tenantId, String(body['razonSocial']), { nombre: String(body['adminNombre']), email: String(body['adminEmail']).toLowerCase(), password: String(body['adminPassword']) }, 'PROVEEDOR');
+      const nueva = empresas.at(-1)!;
+      Object.assign(nueva, { nit: body['nit'], email: body['email'], telefono: body['telefono'] });
+      return ok(proveedorDto(nueva), 201);
+    }
+    const lista = empresas.filter((e) => e.tipo === 'PROVEEDOR' && e.activo).sort((a, b) => a.razonSocial.localeCompare(b.razonSocial));
+    return page(req, lista.map(proveedorDto), (e) => `${e.razonSocial} ${e.nit ?? ''}`);
+  }
   if (presupuestal) {
     // /apus/:id/duplicar crea un registro; /presupuestos/:id/estado y /recalcular lo modifican.
     const especial: Accion | null = id && req.method !== 'GET' ? (id === 'duplicar' ? 'insertar' : 'editar') : null;
@@ -378,7 +435,7 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
 function admin(req: HttpRequest<unknown>, c: Caller, recurso: string, id: string | undefined, sub: string | undefined, body: Body): MockResult | null {
   switch (recurso) {
     case 'modulos':
-      return ok(MODULOS.filter((m) => m.alcance !== 'Plataforma').map((m) => ({ ...m, accionesAsignables: asignables(m) })));
+      return ok(paraTipo(empresas.find((e) => e.tenantId === c.tenant)!.tipo).map(({ soloPara: _solo, ...m }) => ({ ...m, accionesAsignables: asignables(m) })));
 
     case 'empresas': {
       const empresa = empresas.find((e) => e.id === id);
@@ -386,7 +443,8 @@ function admin(req: HttpRequest<unknown>, c: Caller, recurso: string, id: string
       if (req.method === 'POST') {
         const tenantId = String(body['tenantId']);
         if (empresas.some((e) => e.tenantId === tenantId)) return problem(409, 'Empresas.Duplicada', `Ya existe la empresa '${tenantId}'.`);
-        provision(tenantId, String(body['razonSocial']), { nombre: String(body['adminNombre']), email: String(body['adminEmail']).toLowerCase(), password: String(body['adminPassword']) });
+        const tipo: TipoEmpresa = body['tipo'] === 1 ? 'PROVEEDOR' : 'CONSTRUCTORA';
+        provision(tenantId, String(body['razonSocial']), { nombre: String(body['adminNombre']), email: String(body['adminEmail']).toLowerCase(), password: String(body['adminPassword']) }, tipo);
         const nueva = empresas.at(-1)!;
         Object.assign(nueva, { nit: body['nit'], email: body['email'], telefono: body['telefono'] });
         return ok(nueva, 201);
