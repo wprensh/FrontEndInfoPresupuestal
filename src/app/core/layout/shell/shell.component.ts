@@ -115,10 +115,10 @@ export class ShellComponent {
   );
 
   protected readonly links = computed<NavLink[]>(() => [
-    { path: '/presupuesto', label: 'Partidas', icon: 'table_view' },
+    ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/presupuesto', label: 'Partidas', icon: 'table_view' }] : []),
     ...(this.auth.can('presupuestos') ? [{ path: '/presupuestos', label: 'Presupuestos', icon: 'request_quote' }] : []),
     ...(this.auth.can('apu') ? [{ path: '/apu', label: 'APU', icon: 'calculate' }] : []),
-    { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+    ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }] : []),
     ...(this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
       ? [{ path: '/mantenimiento', label: 'Mantenimiento', icon: 'inventory_2' }]
       : []),
@@ -137,6 +137,6 @@ export class ShellComponent {
   /** El superadministrador deja de actuar sobre otra empresa. */
   protected volver(): void {
     this.auth.setActingTenant(null);
-    void this.router.navigateByUrl('/presupuesto');
+    void this.router.navigateByUrl('/');
   }
 }

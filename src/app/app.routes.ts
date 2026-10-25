@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, canView, guestGuard } from './core/auth/auth.guards';
+import { authGuard, canView, guestGuard, inicioSegunPermisos } from './core/auth/auth.guards';
 import { ShellComponent } from './core/layout/shell/shell.component';
 
 /** Cada feature se carga en diferido a través de su archivo `*.routes.ts`. */
@@ -11,8 +11,8 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'presupuesto' },
-      { path: 'presupuesto', loadChildren: () => import('./features/budget/budget.routes').then((m) => m.BUDGET_ROUTES) },
+      { path: '', pathMatch: 'full', redirectTo: inicioSegunPermisos },
+      { path: 'presupuesto', canMatch: [canView('presupuestos', 'apu')], loadChildren: () => import('./features/budget/budget.routes').then((m) => m.BUDGET_ROUTES) },
       {
         path: 'presupuestos',
         canMatch: [canView('presupuestos')],

@@ -19,6 +19,7 @@ Con `useMockBackend` (desarrollo y demo), `core/http/mock-data/admin.mock.ts` si
 |---|---|---|---|
 | `demo` | `admin@demo.local` | `Admin123*` | Administrador |
 | `demo` | `consulta@demo.local` | `Consulta123` | Consulta (solo lectura) |
+| `demo` | `proveedor@demo.local` | `Proveedor123` | Proveedor (insumos y precios, sin eliminar) |
 | `sistema` | `superadmin@infopresupuestal.local` | `Admin123*` | Superadministrador |
 
 ## Arquitectura
