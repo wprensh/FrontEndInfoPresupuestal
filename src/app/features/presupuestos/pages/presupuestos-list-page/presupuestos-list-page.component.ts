@@ -102,7 +102,7 @@ import { ESTADO_LABELS, EstadoPresupuesto, PRESUPUESTO_CURRENCY, PresupuestoResu
     </section>
   `,
   styles: `
-    .page { padding: 24px; max-width: 1440px; margin: 0 auto; }
+    .page { padding: 16px 20px; max-width: 1440px; margin: 0 auto; }
     .toolbar mat-form-field { width: 180px; }
     .link { color: inherit; text-decoration: none; font-weight: 500; }
     .link:hover { text-decoration: underline; }

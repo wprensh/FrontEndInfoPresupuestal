@@ -143,7 +143,7 @@ const SIN_TOTALES: ApuTotales = { materiales: 0, manoObra: 0, equipo: 0, costoDi
     </section>
   `,
   styles: `
-    .page { padding: 24px; max-width: 1440px; margin: 0 auto; }
+    .page { padding: 16px 20px; max-width: 1440px; margin: 0 auto; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
     .main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
     .side { position: sticky; top: 16px; }

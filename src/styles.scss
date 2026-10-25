@@ -11,6 +11,11 @@ html {
     density: 0,
   ));
 
+  // Tonos suaves del diseño: el primary-container de la paleta cian es demasiado saturado.
+  --mat-sys-primary-container: #cfe8e6;
+  --mat-sys-on-primary-container: #00201f;
+  --mat-sys-surface: #f5f7f6;
+
   // Colores semánticos de control presupuestal (estado de partida)
   --ip-status-ok: #2e6b30;
   --ip-status-ok-container: #ddf0da;
@@ -20,6 +25,31 @@ html {
   --ip-status-overrun-container: var(--mat-sys-error-container);
   --ip-brand-accent: #f2b84b;
   --ip-font-mono: 'Roboto Mono', monospace;
+  --ip-row-selected: #e4f1ef;
+  --ip-radius: 12px;
+
+  // Formularios compactos (48 px, texto de 14 px) como en el diseño
+  @include mat.form-field-density(-2);
+  @include mat.form-field-overrides((
+    container-text-size: 14px,
+    outlined-label-text-size: 14px,
+    filled-label-text-size: 14px,
+  ));
+  @include mat.select-overrides((trigger-text-size: 14px));
+
+  // Tablas densas (13 px, filas de 44 px) en toda la aplicación
+  @include mat.table-overrides((
+    background-color: var(--mat-sys-surface-container-lowest),
+    header-container-height: 44px,
+    footer-container-height: 44px,
+    row-item-container-height: 44px,
+    header-headline-size: 12px,
+    header-headline-weight: 500,
+    header-headline-color: var(--mat-sys-on-surface-variant),
+    row-item-label-text-size: 13px,
+    footer-supporting-text-size: 13px,
+    footer-supporting-text-weight: 600,
+  ));
 }
 
 html,

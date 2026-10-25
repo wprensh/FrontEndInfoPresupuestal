@@ -1,11 +1,11 @@
 :host { display: block; }
 .wrap {
-  height: 100%; overflow: auto; border: 1px solid var(--mat-sys-outline-variant); border-radius: 12px;
+  height: 100%; overflow: auto; border: 1px solid var(--mat-sys-outline-variant); border-radius: var(--ip-radius);
   background: var(--mat-sys-surface-container-lowest);
 }
-table { width: 100%; --mat-table-row-item-container-height: 48px; }
-th.mat-mdc-header-cell, td.mat-mdc-footer-cell { background: var(--mat-sys-surface-container-low); font-weight: 500; }
-th.mat-mdc-header-cell { color: var(--mat-sys-on-surface-variant); font-size: 12px; }
+table { width: 100%; }
+th.mat-mdc-header-cell, td.mat-mdc-footer-cell { background: var(--mat-sys-surface-container-low); }
+td.mat-mdc-footer-cell { font-weight: 600; border-top: 1px solid var(--mat-sys-outline-variant); }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .mono { font-family: var(--ip-font-mono); font-size: 12px; }
 .muted { color: var(--mat-sys-on-surface-variant); }
@@ -14,11 +14,11 @@ th.mat-mdc-header-cell { color: var(--mat-sys-on-surface-variant); font-size: 12
 .dot[data-status='ok'] { background: var(--ip-status-ok); }
 .dot[data-status='warning'] { background: var(--ip-status-warning); }
 .dot[data-status='overrun'] { background: var(--ip-status-overrun); }
-td[data-status='overrun'], .negative { color: var(--ip-status-overrun); }
+td[data-status='overrun'], .negative { color: var(--ip-status-overrun); font-weight: 500; }
+td.positive { color: var(--ip-status-ok); }
 td[data-status='warning'] { color: var(--ip-status-warning); }
 tr.mat-mdc-row { cursor: pointer; }
-tr.mat-mdc-row:hover { background: var(--mat-sys-surface-container); }
+tr.mat-mdc-row:hover { background: var(--mat-sys-surface-container-low); }
 tr.mat-mdc-row:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; }
-tr.selected { background: var(--mat-sys-primary-container); box-shadow: inset 3px 0 0 var(--mat-sys-primary); }
-tr.selected:hover { background: var(--mat-sys-primary-container); }
+tr.selected, tr.selected:hover { background: var(--ip-row-selected); box-shadow: inset 3px 0 0 var(--mat-sys-primary); }
 .empty { padding: 24px; text-align: center; color: var(--mat-sys-on-surface-variant); }
