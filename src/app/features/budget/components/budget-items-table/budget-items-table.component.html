@@ -31,7 +31,7 @@
 
     <ng-container matColumnDef="remaining">
       <th mat-header-cell *matHeaderCellDef class="num">Por ejercer</th>
-      <td mat-cell *matCellDef="let item" class="num" [class.negative]="item.remaining < 0">
+      <td mat-cell *matCellDef="let item" class="num" [class.negative]="item.remaining < 0" [class.positive]="item.status === 'ok' && item.remaining > 0">
         {{ item.remaining | currency: currency : 'symbol-narrow' : '1.0-0' }}
       </td>
       <td mat-footer-cell *matFooterCellDef class="num">{{ totals().remaining | currency: currency : 'symbol-narrow' : '1.0-0' }}</td>

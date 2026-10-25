@@ -8,6 +8,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
   selector: 'app-dashboard-page',
   imports: [PageHeaderComponent, MatCardModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `:host { display: block; padding: 16px 20px; }`,
   template: `
     <app-page-header title="Dashboard" subtitle="Resumen de la ejecución presupuestal" />
     <mat-card appearance="outlined">

@@ -7,7 +7,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 @Component({
   selector: 'app-brand-logo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.on-primary]': "tone() === 'on-primary'", role: 'img', 'aria-label': 'InfoPresupuestal' },
+  host: { '[class.on-primary]': "tone() === 'on-primary'", '[class.small]': "size() === 'small'", role: 'img', 'aria-label': 'InfoPresupuestal' },
   template: `
     <span class="mark" aria-hidden="true">
       <span class="beam"></span>
@@ -26,9 +26,13 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .c1 { left: 8px; height: 9px; } .c2 { left: 15.5px; height: 14px; } .c3 { left: 23px; height: 19px; }
     .name { font: 400 20px/1 Roboto, sans-serif; letter-spacing: -0.01em; }
     .name strong { font-weight: 700; }
+    :host(.small) { gap: 10px; }
+    :host(.small) .mark { transform: scale(0.83); margin: -3px; }
+    :host(.small) .name { font-size: 18px; }
   `,
 })
 export class BrandLogoComponent {
   readonly tone = input<'default' | 'on-primary'>('default');
   readonly showName = input(true);
+  readonly size = input<'default' | 'small'>('default');
 }

@@ -13,6 +13,9 @@ import { BudgetFilter } from '../../models/budget.model';
     <mat-chip-listbox aria-label="Filtrar partidas por estado" [value]="value()" (change)="onChange($event)">
       @for (option of options(); track option.value) {
         <mat-chip-option [value]="option.value" [selectable]="option.value !== value()">
+          @if (option.value !== value()) {
+            <mat-icon matChipAvatar>filter_list</mat-icon>
+          }
           {{ option.label }}
           <span class="count">{{ counts()[option.value] }}</span>
         </mat-chip-option>
@@ -20,6 +23,7 @@ import { BudgetFilter } from '../../models/budget.model';
     </mat-chip-listbox>
   `,
   styles: `
+    :host { --mdc-chip-container-height: 32px; --mdc-chip-label-text-size: 13px; }
     .count { margin-left: 6px; font: 500 12px var(--ip-font-mono); opacity: 0.7; }
   `,
 })
