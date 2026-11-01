@@ -100,6 +100,11 @@ interface NavLink {
     .tabs mat-icon { margin-right: 8px; font-size: 20px; width: 20px; height: 20px; }
     .content { flex: 1; min-height: 0; overflow: auto; display: block; }
     @media (max-width: 600px) { .company, .divider { display: none; } .topbar { padding: 0 8px 0 12px; } }
+    @media print {
+      :host { height: auto; display: block; }
+      .topbar, .tabs { display: none; }
+      .content { overflow: visible; }
+    }
   `,
 })
 export class ShellComponent {
@@ -119,18 +124,19 @@ export class ShellComponent {
     ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/presupuesto', label: 'Partidas', icon: 'table_view' }] : []),
     ...(this.auth.can('presupuestos') ? [{ path: '/presupuestos', label: 'Presupuestos', icon: 'request_quote' }] : []),
     ...(this.auth.can('apu') ? [{ path: '/apu', label: 'APU', icon: 'calculate' }] : []),
+    ...(!this.auth.esProveedor() && this.auth.can('programacion') ? [{ path: '/programacion', label: 'Programación', icon: 'view_timeline' }] : []),
     ...(this.auth.canAny(['presupuestos', 'apu']) ? [{ path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }] : []),
     // Un proveedor solo consulta unidades y tipos desde su formulario: no necesita la pestaña de Mantenimiento.
     ...(!this.auth.esProveedor() && this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
       ? [{ path: '/mantenimiento', label: 'Mantenimiento', icon: 'inventory_2' }]
       : []),
     ...(!this.auth.esProveedor() && this.auth.can('proveedores') ? [{ path: '/proveedores', label: 'Proveedores', icon: 'local_shipping' }] : []),
-    ...(this.auth.canAny(['usuarios', 'roles']) ? [{ path: '/administracion', label: 'Administración', icon: 'admin_panel_settings' }] : []),
+    ...(this.auth.canAny(['usuarios', 'roles', 'impresion']) ? [{ path: '/administracion', label: 'Administración', icon: 'admin_panel_settings' }] : []),
   ]);
 
   /** El engranaje lleva a la configuración que el usuario puede ver. */
   protected readonly settingsLink = computed(() =>
-    this.auth.canAny(['usuarios', 'roles'])
+    this.auth.canAny(['usuarios', 'roles', 'impresion'])
       ? '/administracion'
       : !this.auth.esProveedor() && this.auth.canAny(['insumos', 'clasificaciones', 'unidades-medida', 'tipos-insumo'])
         ? '/mantenimiento'

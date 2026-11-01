@@ -17,7 +17,9 @@ export type Modulo =
   | 'apu'
   | 'presupuestos'
   | 'proveedores'
-  | 'catalogo-proveedor';
+  | 'catalogo-proveedor'
+  | 'impresion'
+  | 'programacion';
 
 /** Una constructora arma presupuestos; un proveedor publica su catálogo de precios. */
 export type TipoEmpresa = 'CONSTRUCTORA' | 'PROVEEDOR';

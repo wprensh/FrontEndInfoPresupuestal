@@ -18,6 +18,16 @@ export const routes: Routes = [
         canMatch: [canView('presupuestos')],
         loadChildren: () => import('./features/presupuestos/presupuestos.routes').then((m) => m.PRESUPUESTOS_ROUTES),
       },
+      {
+        path: 'programacion',
+        canMatch: [soloConstructora, canView('programacion')],
+        loadChildren: () => import('./features/programacion/programacion.routes').then((m) => m.PROGRAMACION_ROUTES),
+      },
+      {
+        path: 'impresion',
+        canMatch: [canView('presupuestos')],
+        loadChildren: () => import('./features/impresion/impresion.routes').then((m) => m.IMPRESION_ROUTES),
+      },
       { path: 'apu', canMatch: [canView('apu')], loadChildren: () => import('./features/apu/apu.routes').then((m) => m.APU_ROUTES) },
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES) },
       {
@@ -37,7 +47,7 @@ export const routes: Routes = [
       },
       {
         path: 'administracion',
-        canMatch: [canView('usuarios', 'roles')],
+        canMatch: [canView('usuarios', 'roles', 'impresion')],
         loadChildren: () => import('./features/administracion/administracion.routes').then((m) => m.ADMINISTRACION_ROUTES),
       },
     ],

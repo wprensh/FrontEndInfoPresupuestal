@@ -16,6 +16,7 @@ export class AdminLayoutComponent {
   protected readonly links = computed<SectionLink[]>(() => [
     ...(this.auth.can('usuarios') ? [{ path: 'usuarios', label: 'Usuarios', icon: 'group' }] : []),
     ...(this.auth.can('roles') ? [{ path: 'roles', label: 'Roles y permisos', icon: 'admin_panel_settings' }] : []),
+    ...(this.auth.can('impresion') ? [{ path: 'formato-impresion', label: 'Formato de impresión', icon: 'print' }] : []),
     ...(this.auth.isSuperAdmin() ? [{ path: 'empresas', label: 'Empresas', icon: 'apartment' }] : []),
   ]);
 }

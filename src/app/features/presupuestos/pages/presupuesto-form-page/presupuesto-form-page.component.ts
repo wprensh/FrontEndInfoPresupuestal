@@ -45,7 +45,10 @@ import { ESTADO_LABELS, EstadoPresupuesto, Presupuesto, UnidadMedida } from '../
             @if (auth.can('presupuestos', 'insertar')) {
               <button mat-menu-item (click)="duplicar(p)"><mat-icon>content_copy</mat-icon>Duplicar</button>
             }
-            <button mat-menu-item (click)="imprimir()"><mat-icon>print</mat-icon>Imprimir</button>
+            <a mat-menu-item [routerLink]="['/impresion/presupuesto', p.id]"><mat-icon>print</mat-icon>Imprimir</a>
+            @if (auth.can('programacion')) {
+              <a mat-menu-item [routerLink]="['/programacion', p.id]"><mat-icon>view_timeline</mat-icon>Programación (Gantt)</a>
+            }
           </mat-menu>
         }
         @if (editable()) {
@@ -342,10 +345,6 @@ export class PresupuestoFormPageComponent implements OnInit {
   protected async duplicar(p: Presupuesto): Promise<void> {
     const result = await attempt(this.snackBar, this.api.duplicar(p.id), `Copia de ${p.codigo} creada`);
     if (result.ok) void this.router.navigate(['/presupuestos', result.value.id]);
-  }
-
-  protected imprimir(): void {
-    window.print();
   }
 
   private confirmar(data: ConfirmDialogData): Promise<boolean | undefined> {

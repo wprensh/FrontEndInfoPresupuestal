@@ -2,6 +2,7 @@ import { HttpRequest } from '@angular/common/http';
 
 import { Body, MockResult, noContent, norm, now, ok, page, problem } from './mock-http';
 import { handlePresupuestosMock } from './presupuestos.mock';
+import { handleImpresionMock, handleProgramacionMock, presupuestoImpresionMock } from './programacion.mock';
 import { PrecioImportable, buscarProductosMock, contarProductos, handleProveedoresMock, preciosImportables } from './proveedores.mock';
 
 /**
@@ -100,6 +101,7 @@ const MODULOS: ModuloDef[] = [
   { codigo: 'empresas', nombre: 'Empresas', grupo: 'Administración', alcance: 'Plataforma' },
   { codigo: 'usuarios', nombre: 'Usuarios', grupo: 'Administración', alcance: 'Tenant' },
   { codigo: 'roles', nombre: 'Roles y permisos', grupo: 'Administración', alcance: 'Tenant' },
+  { codigo: 'impresion', nombre: 'Formato de impresión', grupo: 'Administración', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'clasificaciones', nombre: 'Clasificaciones', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'unidades-medida', nombre: 'Unidades de medida', grupo: 'Mantenimiento', alcance: 'Global' },
   { codigo: 'tipos-insumo', nombre: 'Tipos de insumo', grupo: 'Mantenimiento', alcance: 'Global' },
@@ -108,6 +110,7 @@ const MODULOS: ModuloDef[] = [
   { codigo: 'proveedores', nombre: 'Proveedores', grupo: 'Mantenimiento', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'apu', nombre: 'Análisis de precios unitarios', grupo: 'Presupuestos', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'presupuestos', nombre: 'Presupuestos de obra', grupo: 'Presupuestos', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
+  { codigo: 'programacion', nombre: 'Programación de obra (Gantt)', grupo: 'Presupuestos', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'productos', nombre: 'Productos', grupo: 'Operación', alcance: 'Tenant', soloPara: 'CONSTRUCTORA' },
   { codigo: 'catalogo-proveedor', nombre: 'Catálogo y precios del proveedor', grupo: 'Proveedor', alcance: 'Tenant', soloPara: 'PROVEEDOR' },
 ];
@@ -476,7 +479,9 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
   const [, seccion, recurso, id, sub, subId] = path.split('/');
   const presupuestal = seccion === 'apus' || seccion === 'presupuestos';
   const proveedores = seccion === 'proveedor' || seccion === 'proveedores';
-  if (!presupuestal && !proveedores && seccion !== 'auth' && seccion !== 'admin' && seccion !== 'mantenimiento') return null;
+  const impresion = seccion === 'impresion';
+  const programacion = seccion === 'programaciones' || (seccion === 'presupuestos' && id === 'programacion');
+  if (!presupuestal && !proveedores && !impresion && !programacion && seccion !== 'auth' && seccion !== 'admin' && seccion !== 'mantenimiento') return null;
 
   const c = caller(req);
   if (!c) return problem(401, 'Unauthorized', 'Inicia sesión de nuevo.');
@@ -514,6 +519,22 @@ export function handleAdminMock(req: HttpRequest<unknown>): MockResult | null {
     }
     const lista = empresas.filter((e) => e.tipo === 'PROVEEDOR' && e.activo).sort((a, b) => a.razonSocial.localeCompare(b.razonSocial));
     return page(req, lista.map(proveedorDto), (e) => `${e.razonSocial} ${e.nit ?? ''}`);
+  }
+  const unidadDe = (u: number) => unidades.find((x) => x.id === u);
+  const empresaActual = empresas.find((e) => e.tenantId === c.tenant)!;
+  if (impresion) {
+    if (!can(c, 'impresion', accion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    return handleImpresionMock(req, c.tenant, empresaActual, body);
+  }
+  if (programacion) {
+    // /presupuestos/:id/programacion/generar crea la programación; el resto sigue el método HTTP.
+    const accionProgramacion: Accion = sub === 'generar' ? 'insertar' : accion;
+    if (!can(c, 'programacion', accionProgramacion)) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    return handleProgramacionMock(req, c.tenant, seccion === 'programaciones' ? undefined : recurso, sub, body, unidadDe);
+  }
+  if (seccion === 'presupuestos' && id === 'impresion' && req.method === 'GET') {
+    if (!can(c, 'presupuestos', 'ver')) return problem(403, 'Forbidden', 'No tienes permiso para esta acción.');
+    return presupuestoImpresionMock(c.tenant, recurso, empresaActual, unidadDe);
   }
   if (presupuestal) {
     // /apus/:id/duplicar crea un registro; /presupuestos/:id/estado y /recalcular lo modifican.
@@ -572,7 +593,14 @@ function admin(req: HttpRequest<unknown>, c: Caller, recurso: string, id: string
       }
       if (!rol) return problem(404, 'Roles.NotFound', 'No existe el rol.');
       if (req.method === 'GET') return ok({ ...rol, usuarios: undefined });
-      if (rol.esSistema) return problem(409, 'Roles.EsSistema', 'Los roles del sistema no se editan ni se eliminan.');
+      if (rol.esSistema && (req.method !== 'PUT' || !c.user.esSuperAdmin)) {
+        return problem(409, 'Roles.Sistema', 'Los roles de sistema solo los modifica el superadministrador y no se eliminan.');
+      }
+      if (req.method === 'PUT' && rol.esSistema) {
+        // El nombre de un rol de sistema se conserva; los módulos sin acciones se guardan para no reasignarlos.
+        Object.assign(rol, { descripcion: body['descripcion'] ?? null, permisos: body['permisos'] });
+        return ok(rol);
+      }
       if (req.method === 'PUT') {
         if (dup()) return problem(409, 'Roles.NombreDuplicado', `Ya existe el rol '${nombre}'.`);
         Object.assign(rol, { nombre, descripcion: body['descripcion'] ?? null, permisos: body['permisos'] });

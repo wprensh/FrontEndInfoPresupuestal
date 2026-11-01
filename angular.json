@@ -32,7 +32,12 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              {
+                "input": "node_modules/dhtmlx-gantt/codebase/dhtmlxgantt.css",
+                "bundleName": "dhtmlxgantt",
+                "inject": false
+              }
             ],
             "scripts": []
           },
