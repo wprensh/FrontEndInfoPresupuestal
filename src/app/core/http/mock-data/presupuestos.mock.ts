@@ -471,3 +471,16 @@ function leerPresupuesto(tenant: string, body: Body, unidad: (id: number) => Uni
     capitulos,
   };
 }
+
+/** Presupuesto completo como lo devuelve la API, para la impresión y la programación simuladas. */
+export function presupuestoMock(tenant: string, id: string, unidad: (id: number) => Unidad): ReturnType<typeof presupuestoDto> | null {
+  const p = presupuestos.find((x) => x.tenantId === tenant && x.id === id);
+  return p ? presupuestoDto(p, unidad) : null;
+}
+
+/** Presupuestos no anulados de la empresa, del más reciente al más antiguo. */
+export function presupuestosActivos(tenant: string): { id: string; codigo: string; nombreObra: string; cliente: string | null; estado: string; fecha: string }[] {
+  return presupuestos
+    .filter((p) => p.tenantId === tenant && p.estado !== 'ANULADO')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.codigo.localeCompare(a.codigo));
+}

@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 
 import { canView, superAdminGuard } from '../../core/auth/auth.guards';
 import { AuthService } from '../../core/auth/auth.service';
+import { FORMATO_IMPRESION_ROUTE } from '../impresion/impresion.routes';
 import { AdminApiService } from './data-access/admin-api.service';
 
 export const ADMINISTRACION_ROUTES: Routes = [
@@ -16,7 +17,7 @@ export const ADMINISTRACION_ROUTES: Routes = [
         pathMatch: 'full',
         redirectTo: () => {
           const auth = inject(AuthService);
-          return auth.can('usuarios') ? 'usuarios' : auth.can('roles') ? 'roles' : 'empresas';
+          return auth.can('usuarios') ? 'usuarios' : auth.can('roles') ? 'roles' : auth.can('impresion') ? 'formato-impresion' : 'empresas';
         },
       },
       {
@@ -31,6 +32,7 @@ export const ADMINISTRACION_ROUTES: Routes = [
         canMatch: [canView('roles')],
         loadComponent: () => import('./pages/roles-page/roles-page.component').then((m) => m.RolesPageComponent),
       },
+      { ...FORMATO_IMPRESION_ROUTE, canMatch: [canView('impresion')] },
       {
         path: 'empresas',
         title: 'Empresas | InfoPresupuestal',

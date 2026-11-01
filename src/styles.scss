@@ -63,3 +63,75 @@ body {
   background: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
 }
+
+// ---------------------------------------------------------------------------
+// DHTMLX Gantt con los colores institucionales. La hoja de DHTMLX se carga aparte
+// (bundle "dhtmlxgantt" en angular.json); estas variables tienen más especificidad
+// que su :root, así aplican también al lightbox y a los tooltips.
+// ---------------------------------------------------------------------------
+html:root {
+  --ip-gantt-task: #00838f;
+  --ip-gantt-task-progress: #005f66;
+  --ip-gantt-project: #004f4f;
+  --ip-gantt-project-progress: #002f2f;
+  --ip-gantt-milestone: var(--ip-brand-accent);
+  --ip-gantt-critica: #c62828;
+  --ip-gantt-atrasada: #ef6c00;
+
+  --dhx-gantt-font-family: Roboto, 'Helvetica Neue', sans-serif;
+  --dhx-gantt-font-size: 13px;
+  --dhx-gantt-base-colors-primary: var(--mat-sys-primary);
+  --dhx-gantt-base-colors-primary-hover: color-mix(in srgb, var(--mat-sys-primary) 88%, #000);
+  --dhx-gantt-base-colors-primary-active: color-mix(in srgb, var(--mat-sys-primary) 76%, #000);
+  --dhx-gantt-base-colors-select: var(--ip-row-selected);
+  --dhx-gantt-base-colors-error: var(--mat-sys-error);
+  --dhx-gantt-base-colors-border: var(--mat-sys-outline-variant);
+  --dhx-gantt-base-colors-text-base: var(--mat-sys-on-surface);
+  --dhx-gantt-base-colors-text-light: var(--mat-sys-on-surface-variant);
+  --dhx-gantt-base-colors-icons: var(--mat-sys-on-surface-variant);
+  --dhx-gantt-container-background: #fff;
+  --dhx-gantt-scale-color: var(--mat-sys-on-surface-variant);
+  --dhx-gantt-task-background: var(--ip-gantt-task);
+  --dhx-gantt-task-color: #fff;
+  --dhx-gantt-task-progress-color: var(--ip-gantt-task-progress);
+  --dhx-gantt-task-border: none;
+  --dhx-gantt-project-background: var(--ip-gantt-project);
+  --dhx-gantt-milestone-background: var(--ip-gantt-milestone);
+  --dhx-gantt-link-background: #78909c;
+  --dhx-gantt-border-radius: 6px;
+  --dhx-gantt-btn-text-transform: none;
+}
+
+.gantt_container {
+  .gantt_grid_head_cell { font-weight: 500; color: var(--mat-sys-on-surface-variant); }
+  .gantt_row.fila-capitulo { font-weight: 600; background: color-mix(in srgb, var(--mat-sys-primary) 5%, #fff); }
+  .gantt_row.fila-atrasada .gantt_cell { color: var(--ip-gantt-atrasada); }
+  .gantt_task_line.tipo-project { --dhx-gantt-task-progress-color: var(--ip-gantt-project-progress); }
+  .gantt_task_line.tipo-project .gantt_task_progress { background: var(--ip-gantt-project-progress); }
+  .gantt_task_line.atrasada:not(.tipo-milestone) { box-shadow: inset 0 -3px 0 var(--ip-gantt-atrasada); }
+  .gantt_task_line.critica:not(.con-color) { background: var(--ip-gantt-critica); }
+  .gantt_task_line.critica .gantt_task_progress { background: #8e0000; }
+  .gantt_task_line.critica.tipo-milestone .gantt_task_content { background: var(--ip-gantt-critica); }
+  .gantt_task_link.critica .gantt_line_wrapper div { background: var(--ip-gantt-critica); }
+  .gantt_task_link.critica .gantt_link_arrow { color: var(--ip-gantt-critica); border-color: var(--ip-gantt-critica); }
+  .gantt_task_cell.finde, .gantt_scale_cell.finde { background: var(--mat-sys-surface-container); }
+  .gantt_task_cell.hoy { background: color-mix(in srgb, var(--ip-brand-accent) 22%, transparent); border-left: 2px solid var(--ip-brand-accent); }
+  .gantt_side_content { font-size: 12px; color: var(--mat-sys-on-surface-variant); }
+  .desv { font-weight: 600; font-size: 11px; }
+  .desv.atraso { color: var(--mat-sys-error); }
+  .desv.adelanto { color: var(--ip-status-ok); }
+}
+.gantt_tooltip .tt-critica { color: var(--ip-gantt-critica); font-weight: 600; }
+
+// ---------------------------------------------------------------------------
+// Impresión: hoja carta con número de página; lo marcado .no-print no sale.
+// ---------------------------------------------------------------------------
+@media print {
+  @page {
+    size: letter;
+    margin: 12mm 10mm 14mm;
+    @bottom-right { content: 'Página ' counter(page) ' de ' counter(pages); font: 8pt Roboto, sans-serif; color: #666; }
+  }
+  html, body { height: auto; background: #fff; }
+  .no-print { display: none !important; }
+}
