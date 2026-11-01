@@ -593,7 +593,14 @@ function admin(req: HttpRequest<unknown>, c: Caller, recurso: string, id: string
       }
       if (!rol) return problem(404, 'Roles.NotFound', 'No existe el rol.');
       if (req.method === 'GET') return ok({ ...rol, usuarios: undefined });
-      if (rol.esSistema) return problem(409, 'Roles.EsSistema', 'Los roles del sistema no se editan ni se eliminan.');
+      if (rol.esSistema && (req.method !== 'PUT' || !c.user.esSuperAdmin)) {
+        return problem(409, 'Roles.Sistema', 'Los roles de sistema solo los modifica el superadministrador y no se eliminan.');
+      }
+      if (req.method === 'PUT' && rol.esSistema) {
+        // El nombre de un rol de sistema se conserva; los módulos sin acciones se guardan para no reasignarlos.
+        Object.assign(rol, { descripcion: body['descripcion'] ?? null, permisos: body['permisos'] });
+        return ok(rol);
+      }
       if (req.method === 'PUT') {
         if (dup()) return problem(409, 'Roles.NombreDuplicado', `Ya existe el rol '${nombre}'.`);
         Object.assign(rol, { nombre, descripcion: body['descripcion'] ?? null, permisos: body['permisos'] });

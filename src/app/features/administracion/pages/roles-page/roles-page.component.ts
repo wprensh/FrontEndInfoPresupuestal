@@ -57,8 +57,8 @@ import { ModuloInfo, Rol, RolDto, RolResumen } from '../../models/admin.model';
         <ng-container matColumnDef="acciones">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r" class="actions-cell">
-            <button mat-icon-button [matTooltip]="r.esSistema || !auth.can('roles', 'editar') ? 'Ver permisos' : 'Editar'" (click)="open(r)">
-              <mat-icon>{{ r.esSistema || !auth.can('roles', 'editar') ? 'visibility' : 'edit' }}</mat-icon>
+            <button mat-icon-button [matTooltip]="soloLectura(r) ? 'Ver permisos' : 'Editar'" (click)="open(r)">
+              <mat-icon>{{ soloLectura(r) ? 'visibility' : 'edit' }}</mat-icon>
             </button>
             @if (!r.esSistema) {
               <button mat-icon-button matTooltip="Eliminar" *appIfCan="['roles', 'eliminar']" (click)="remove(r)"><mat-icon>delete</mat-icon></button>
@@ -106,7 +106,7 @@ export class RolesPageComponent implements OnInit {
       rol = loaded.value;
     }
 
-    const soloLectura = !!rol && (rol.esSistema || !this.auth.can('roles', 'editar'));
+    const soloLectura = !!rol && this.soloLectura(rol);
     const dto = await firstValueFrom(
       this.dialog
         .open<RolFormDialogComponent, RolFormData, RolDto>(RolFormDialogComponent, { data: { rol, modulos: this.modulos(), soloLectura }, width: '760px', maxWidth: '95vw' })
@@ -118,6 +118,11 @@ export class RolesPageComponent implements OnInit {
       ? await attempt(this.snackBar, this.api.updateRol(rol.id, dto), 'Rol actualizado')
       : await attempt(this.snackBar, this.api.createRol(dto), 'Rol creado');
     if (saved.ok) void this.list.load();
+  }
+
+  /** Los roles de sistema (Administrador, Consulta, Proveedor) solo los edita el superadministrador. */
+  protected soloLectura(rol: { esSistema: boolean }): boolean {
+    return (rol.esSistema && !this.auth.isSuperAdmin()) || !this.auth.can('roles', 'editar');
   }
 
   protected async remove(rol: RolResumen): Promise<void> {

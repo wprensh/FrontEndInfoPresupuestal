@@ -36,7 +36,11 @@ export const ACCION_LABELS: Record<Accion, string> = { ver: 'Ver', insertar: 'In
           </mat-form-field>
         </div>
         @if (data.rol?.esSistema) {
-          <p class="note"><mat-icon>lock</mat-icon>Rol del sistema: no se edita ni se elimina. Crea un rol nuevo para otra combinación de permisos.</p>
+          @if (data.soloLectura) {
+            <p class="note"><mat-icon>lock</mat-icon>Rol del sistema: solo el superadministrador lo edita y no se elimina. Crea un rol nuevo para otra combinación de permisos.</p>
+          } @else {
+            <p class="note"><mat-icon>admin_panel_settings</mat-icon>Rol del sistema: como superadministrador puedes cambiar su descripción y permisos; el nombre se conserva. Los módulos que desmarques no se vuelven a asignar solos.</p>
+          }
         }
         <table class="matrix">
           <thead>
@@ -104,7 +108,7 @@ export class RolFormDialogComponent {
   protected readonly labels = ACCION_LABELS;
 
   protected readonly form = inject(NonNullableFormBuilder).group({
-    nombre: [{ value: this.data.rol?.nombre ?? '', disabled: this.data.soloLectura }, [Validators.required, Validators.maxLength(60)]],
+    nombre: [{ value: this.data.rol?.nombre ?? '', disabled: this.data.soloLectura || !!this.data.rol?.esSistema }, [Validators.required, Validators.maxLength(60)]],
     descripcion: [{ value: this.data.rol?.descripcion ?? '', disabled: this.data.soloLectura }, Validators.maxLength(300)],
   });
 
@@ -150,7 +154,9 @@ export class RolFormDialogComponent {
       return;
     }
     const { nombre, descripcion } = this.form.getRawValue();
-    const permisos = [...this.permisos().values()].filter((p) => p.ver || p.insertar || p.editar || p.eliminar);
+    // En un rol de sistema van también los módulos sin acciones: así el servidor sabe que se quitaron a propósito.
+    const sistema = !!this.data.rol?.esSistema;
+    const permisos = [...this.permisos().values()].filter((p) => sistema || p.ver || p.insertar || p.editar || p.eliminar);
     this.dialogRef.close({ nombre: nombre.trim(), descripcion: descripcion.trim() || null, permisos });
   }
 }
